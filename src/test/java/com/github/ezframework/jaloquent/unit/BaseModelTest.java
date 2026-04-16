@@ -1,4 +1,6 @@
-package com.github.ezframework.jaloquent.model;
+package com.github.ezframework.jaloquent.unit;
+
+import com.github.ezframework.jaloquent.model.BaseModel;
 
 import org.junit.jupiter.api.Test;
 
