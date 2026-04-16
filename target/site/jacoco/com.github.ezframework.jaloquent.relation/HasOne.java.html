@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HasOne.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jaloquent</a> &gt; <a href="index.source.html" class="el_package">com.github.ezframework.jaloquent.relation</a> &gt; <span class="el_source">HasOne.java</span></div><h1>HasOne.java</h1><pre class="source lang-java linenums">package com.github.ezframework.jaloquent.relation;
+
+import com.github.ezframework.jaloquent.exception.StorageException;
+import com.github.ezframework.jaloquent.model.BaseModel;
+import com.github.ezframework.jaloquent.model.ModelRepository;
+import com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Represents a one-to-one relationship where the foreign key lives on the related model.
+ *
+ * &lt;p&gt;Example — a {@code User} has one {@code Phone}:
+ * &lt;pre&gt;{@code
+ * public HasOne&lt;Phone&gt; phone() {
+ *     return hasOne(phoneRepo, &quot;user_id&quot;);
+ * }
+ * }&lt;/pre&gt;
+ *
+ * @param &lt;T&gt; the related model type
+ */
+public final class HasOne&lt;T extends BaseModel&gt; extends Relation&lt;T&gt; {
+
+    /**
+     * Constructor. Use
+     * {@link com.github.ezframework.jaloquent.model.Model#hasOne(ModelRepository, String)} to create.
+     *
+     * @param related      the related model repository
+     * @param queryBuilder the query builder with the base constraint applied
+     */
+    public HasOne(ModelRepository&lt;T&gt; related, QueryBuilder queryBuilder) {
+<span class="fc" id="L32">        super(related, queryBuilder);</span>
+<span class="fc" id="L33">    }</span>
+
+    /**
+     * Add an additional WHERE equals constraint to the relationship query.
+     *
+     * @param column column name
+     * @param value  value to match
+     * @return this for chaining
+     */
+    public HasOne&lt;T&gt; where(String column, Object value) {
+<span class="fc" id="L43">        queryBuilder.whereEquals(column, value);</span>
+<span class="fc" id="L44">        return this;</span>
+    }
+
+    /**
+     * Order results for deterministic row selection.
+     *
+     * @param column column to sort on
+     * @param asc    {@code true} for ascending order
+     * @return this for chaining
+     */
+    public HasOne&lt;T&gt; orderBy(String column, boolean asc) {
+<span class="nc" id="L55">        queryBuilder.orderBy(column, asc);</span>
+<span class="nc" id="L56">        return this;</span>
+    }
+
+    /**
+     * Execute the relationship and return the first matching related model.
+     *
+     * @return the related model, or an empty Optional when no match exists
+     * @throws Exception on storage failure
+     */
+    public Optional&lt;T&gt; get() throws StorageException {
+<span class="fc" id="L66">        queryBuilder.limit(1);</span>
+<span class="fc" id="L67">        final List&lt;T&gt; results = related.query(queryBuilder.build());</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));</span>
+    }
+
+    /**
+     * Return {@code true} when at least one related record exists.
+     *
+     * @return {@code true} when the relationship is populated
+     * @throws Exception on storage failure
+     */
+    public boolean exists() throws StorageException {
+<span class="fc" id="L78">        return get().isPresent();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

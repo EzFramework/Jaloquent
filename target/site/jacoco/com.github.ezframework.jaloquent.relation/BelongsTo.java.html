@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BelongsTo.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jaloquent</a> &gt; <a href="index.source.html" class="el_package">com.github.ezframework.jaloquent.relation</a> &gt; <span class="el_source">BelongsTo.java</span></div><h1>BelongsTo.java</h1><pre class="source lang-java linenums">package com.github.ezframework.jaloquent.relation;
+
+import com.github.ezframework.jaloquent.exception.StorageException;
+import com.github.ezframework.jaloquent.model.BaseModel;
+import com.github.ezframework.jaloquent.model.ModelRepository;
+import java.util.Optional;
+
+/**
+ * Represents the inverse side of a one-to-one or one-to-many relationship.
+ *
+ * &lt;p&gt;The foreign key lives on the child model. The relationship is resolved by
+ * looking up the stored FK value in the related model's repository.
+ *
+ * &lt;p&gt;Example — a {@code Post} belongs to a {@code User}:
+ * &lt;pre&gt;{@code
+ * public BelongsTo&lt;User&gt; author() {
+ *     return belongsTo(userRepo, &quot;user_id&quot;);
+ * }
+ * }&lt;/pre&gt;
+ *
+ * @param &lt;T&gt; the related (parent/owner) model type
+ */
+public final class BelongsTo&lt;T extends BaseModel&gt; {
+
+    /** Repository for the related (parent/owner) model. */
+    private final ModelRepository&lt;T&gt; related;
+
+    /** The FK value stored on this model (the owner's ID to look up). */
+    private final String ownerKeyValue;
+
+    /**
+     * Constructor. Use
+     * {@link com.github.ezframework.jaloquent.model.Model#belongsTo(ModelRepository, String)} to create.
+     *
+     * @param related       the related model repository
+     * @param ownerKeyValue the FK value stored on this model (may be {@code null})
+     */
+<span class="fc" id="L38">    public BelongsTo(ModelRepository&lt;T&gt; related, String ownerKeyValue) {</span>
+<span class="fc" id="L39">        this.related = related;</span>
+<span class="fc" id="L40">        this.ownerKeyValue = ownerKeyValue;</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Load the related model by its primary key.
+     *
+     * @return the related model, or an empty Optional when the FK is {@code null} or has no match
+     * @throws Exception on storage failure
+     */
+    public Optional&lt;T&gt; get() throws StorageException {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (ownerKeyValue == null) {</span>
+<span class="fc" id="L51">            return Optional.empty();</span>
+        }
+<span class="fc" id="L53">        return related.find(ownerKeyValue);</span>
+    }
+
+    /**
+     * Return {@code true} when the FK is set and the related record exists.
+     *
+     * @return {@code true} when the relationship is populated
+     * @throws Exception on storage failure
+     */
+    public boolean exists() throws StorageException {
+<span class="fc" id="L63">        return get().isPresent();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

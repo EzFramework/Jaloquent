@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PivotModel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jaloquent</a> &gt; <a href="index.source.html" class="el_package">com.github.ezframework.jaloquent.model</a> &gt; <span class="el_source">PivotModel.java</span></div><h1>PivotModel.java</h1><pre class="source lang-java linenums">package com.github.ezframework.jaloquent.model;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * A ready-to-use {@link Model} for pivot (join) tables used in many-to-many relationships.
+ *
+ * &lt;p&gt;Provides a pre-built {@link ModelFactory} constant so that callers do not need to write
+ * a factory lambda when using
+ * {@link Model#belongsToMany(com.github.ezframework.jaloquent.model.ModelRepository,
+ * com.github.ezframework.jaloquent.model.ModelRepository, ModelFactory, String, String)}:
+ * &lt;pre&gt;{@code
+ * public BelongsToMany&lt;Role, PivotModel&gt; roles() {
+ *     return belongsToMany(roleRepo, pivotRepo, PivotModel.FACTORY, &quot;user_id&quot;, &quot;role_id&quot;);
+ * }
+ * }&lt;/pre&gt;
+ */
+public final class PivotModel extends Model {
+
+    /**
+     * Pre-built factory that creates and populates a {@link PivotModel} from its id and data map.
+     */
+<span class="fc" id="L24">    public static final ModelFactory&lt;PivotModel&gt; FACTORY = (id, data) -&gt; {</span>
+<span class="fc" id="L25">        final PivotModel p = new PivotModel(id);</span>
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">        if (data != null) {</span>
+<span class="fc" id="L27">            p.fromMap(data);</span>
+        }
+<span class="fc" id="L29">        return p;</span>
+    };
+
+    /**
+     * Construct a pivot model with the given id.
+     *
+     * @param id the pivot record identifier
+     */
+    public PivotModel(String id) {
+<span class="fc" id="L38">        super(id);</span>
+<span class="fc" id="L39">    }</span>
+
+    /**
+     * Serialize all attributes to a flat map.
+     *
+     * @return a mutable copy of the attribute map
+     */
+    @Override
+    public Map&lt;String, Object&gt; toMap() {
+<span class="fc" id="L48">        return new HashMap&lt;&gt;(attributes());</span>
+    }
+
+    /**
+     * Populate this pivot model's attributes from a flat map.
+     *
+     * @param map the source map (may be {@code null})
+     */
+    @Override
+    public void fromMap(Map&lt;String, Object&gt; map) {
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (map == null) {</span>
+<span class="nc" id="L59">            return;</span>
+        }
+<span class="fc" id="L61">        map.forEach(this::set);</span>
+<span class="fc" id="L62">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BelongsToMany.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jaloquent</a> &gt; <a href="index.source.html" class="el_package">com.github.ezframework.jaloquent.relation</a> &gt; <span class="el_source">BelongsToMany.java</span></div><h1>BelongsToMany.java</h1><pre class="source lang-java linenums">package com.github.ezframework.jaloquent.relation;
+
+import com.github.ezframework.jaloquent.exception.StorageException;
+import com.github.ezframework.jaloquent.model.BaseModel;
+import com.github.ezframework.jaloquent.model.Model;
+import com.github.ezframework.jaloquent.model.ModelFactory;
+import com.github.ezframework.jaloquent.model.ModelRepository;
+import com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+/**
+ * Represents a many-to-many relationship mediated by a pivot model.
+ *
+ * &lt;p&gt;Example — a {@code User} belongs to many {@code Role}s via a {@code user_roles} pivot table:
+ * &lt;pre&gt;{@code
+ * public BelongsToMany&lt;Role, PivotModel&gt; roles() {
+ *     return belongsToMany(roleRepo, pivotRepo, PivotModel.FACTORY, &quot;user_id&quot;, &quot;role_id&quot;);
+ * }
+ * }&lt;/pre&gt;
+ *
+ * &lt;p&gt;The pivot model must expose the two FK columns via {@link BaseModel#toMap()} and accept
+ * them via {@link BaseModel#fromMap(Map)}.
+ *
+ * @param &lt;T&gt; the related model type
+ * @param &lt;P&gt; the pivot model type
+ */
+public final class BelongsToMany&lt;T extends BaseModel, P extends BaseModel&gt; {
+
+    /** Repository for the related model. */
+    private final ModelRepository&lt;T&gt; related;
+
+    /** Repository for the pivot model. */
+    private final ModelRepository&lt;P&gt; pivotRepo;
+
+    /** Factory used to create new pivot model instances for attach operations. */
+    private final ModelFactory&lt;P&gt; pivotFactory;
+
+    /** The primary key value of the parent model. */
+    private final String parentId;
+
+    /** Column name in the pivot table that stores the parent model's ID. */
+    private final String foreignKey;
+
+    /** Column name in the pivot table that stores the related model's ID. */
+    private final String relatedKey;
+
+    /** Additional constraints applied to the related model query in {@link #get()}. */
+    private final List&lt;Consumer&lt;QueryBuilder&gt;&gt; relatedConstraints;
+
+    /**
+     * Constructor. Use
+     * {@link com.github.ezframework.jaloquent.model.Model#belongsToMany} to create.
+     *
+     * @param related       the related model repository
+     * @param pivotRepo     the pivot model repository
+     * @param pivotFactory  factory for creating new pivot model instances
+     * @param parentId      the ID of the parent model
+     * @param foreignKey    pivot column pointing to the parent model's ID
+     * @param relatedKey    pivot column pointing to the related model's ID
+     */
+    public BelongsToMany(
+            ModelRepository&lt;T&gt; related,
+            ModelRepository&lt;P&gt; pivotRepo,
+            ModelFactory&lt;P&gt; pivotFactory,
+            String parentId,
+            String foreignKey,
+<span class="fc" id="L72">            String relatedKey) {</span>
+<span class="fc" id="L73">        this.related = related;</span>
+<span class="fc" id="L74">        this.pivotRepo = pivotRepo;</span>
+<span class="fc" id="L75">        this.pivotFactory = pivotFactory;</span>
+<span class="fc" id="L76">        this.parentId = parentId;</span>
+<span class="fc" id="L77">        this.foreignKey = foreignKey;</span>
+<span class="fc" id="L78">        this.relatedKey = relatedKey;</span>
+<span class="fc" id="L79">        this.relatedConstraints = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     * Add an additional WHERE equals constraint applied to the related model query after pivot resolution.
+     *
+     * @param column column name on the related model table
+     * @param value  value to match
+     * @return this for chaining
+     */
+    public BelongsToMany&lt;T, P&gt; where(String column, Object value) {
+<span class="fc" id="L90">        relatedConstraints.add(qb -&gt; qb.whereEquals(column, value));</span>
+<span class="fc" id="L91">        return this;</span>
+    }
+
+    /**
+     * Order the related results.
+     *
+     * @param column column to sort on
+     * @param asc    {@code true} for ascending order
+     * @return this for chaining
+     */
+    public BelongsToMany&lt;T, P&gt; orderBy(String column, boolean asc) {
+<span class="nc" id="L102">        relatedConstraints.add(qb -&gt; qb.orderBy(column, asc));</span>
+<span class="nc" id="L103">        return this;</span>
+    }
+
+    /**
+     * Execute the relationship: resolve pivot rows then load all related models.
+     *
+     * @return list of related models; never {@code null}
+     * @throws Exception on storage failure
+     */
+    public List&lt;T&gt; get() throws StorageException {
+<span class="fc" id="L113">        final List&lt;P&gt; pivotEntries = pivotRepo.query(</span>
+<span class="fc" id="L114">                new QueryBuilder().whereEquals(foreignKey, parentId).build());</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (pivotEntries.isEmpty()) {</span>
+<span class="fc" id="L116">            return new ArrayList&lt;&gt;();</span>
+        }
+<span class="fc" id="L118">        final List&lt;String&gt; relatedIds = collectRelatedIds(pivotEntries);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (relatedIds.isEmpty()) {</span>
+<span class="nc" id="L120">            return new ArrayList&lt;&gt;();</span>
+        }
+<span class="fc" id="L122">        final QueryBuilder qb = new QueryBuilder().whereIn(&quot;id&quot;, relatedIds);</span>
+<span class="fc" id="L123">        relatedConstraints.forEach(c -&gt; c.accept(qb));</span>
+<span class="fc" id="L124">        return related.query(qb.build());</span>
+    }
+
+    /**
+     * Attach a related model to this relationship by creating a pivot entry.
+     *
+     * @param relatedId the ID of the related model to attach
+     * @throws Exception on storage failure
+     */
+    public void attach(String relatedId) throws StorageException {
+<span class="fc" id="L134">        attach(relatedId, null);</span>
+<span class="fc" id="L135">    }</span>
+
+    /**
+     * Attach a related model with optional extra attributes stored on the pivot entry.
+     *
+     * @param relatedId  the ID of the related model to attach
+     * @param extraAttrs additional key-value pairs to store on the pivot entry (may be {@code null})
+     * @throws Exception on storage failure
+     */
+    public void attach(String relatedId, Map&lt;String, Object&gt; extraAttrs) throws StorageException {
+<span class="fc" id="L145">        final String pivotId = parentId + &quot;_&quot; + relatedId;</span>
+<span class="fc" id="L146">        final Map&lt;String, Object&gt; data = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L147">        data.put(foreignKey, parentId);</span>
+<span class="fc" id="L148">        data.put(relatedKey, relatedId);</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        if (extraAttrs != null) {</span>
+<span class="fc" id="L150">            data.putAll(extraAttrs);</span>
+        }
+<span class="fc" id="L152">        final P pivot = pivotFactory.create(pivotId, data);</span>
+<span class="fc" id="L153">        pivot.fromMap(data);</span>
+<span class="fc" id="L154">        pivotRepo.save(pivot);</span>
+<span class="fc" id="L155">    }</span>
+
+    /**
+     * Detach a specific related model from this relationship by removing the pivot entry.
+     *
+     * @param relatedId the ID of the related model to detach
+     * @throws Exception on storage failure
+     */
+    public void detach(String relatedId) throws StorageException {
+<span class="fc" id="L164">        pivotRepo.delete(parentId + &quot;_&quot; + relatedId);</span>
+<span class="fc" id="L165">    }</span>
+
+    /**
+     * Detach all related models from this relationship.
+     *
+     * &lt;p&gt;Issues a single bulk DELETE (SQL path) or iterates once over QueryableStorage results
+     * (flat-map path). No separate SELECT is issued on the SQL path.
+     *
+     * @throws Exception on storage failure
+     */
+    public void detachAll() throws StorageException {
+<span class="fc" id="L176">        pivotRepo.deleteWhere(foreignKey, parentId);</span>
+<span class="fc" id="L177">    }</span>
+
+    /**
+     * Sync the relationship to exactly the given set of related IDs.
+     * Existing IDs not in the list are detached; new IDs not yet present are attached.
+     *
+     * &lt;p&gt;Removals are executed as a single bulk DELETE rather than one DELETE per removed entry,
+     * avoiding the N+1 problem when many pivot records must be removed.
+     *
+     * @param desiredIds the desired set of related model IDs
+     * @throws Exception on storage failure
+     */
+    public void sync(List&lt;String&gt; desiredIds) throws StorageException {
+<span class="fc" id="L190">        final List&lt;P&gt; existing = pivotRepo.query(</span>
+<span class="fc" id="L191">                new QueryBuilder().whereEquals(foreignKey, parentId).build());</span>
+<span class="fc" id="L192">        final List&lt;String&gt; currentIds = collectRelatedIds(existing);</span>
+<span class="fc" id="L193">        final List&lt;String&gt; pivotIdsToDelete = currentIds.stream()</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">                .filter(id -&gt; !desiredIds.contains(id))</span>
+<span class="fc" id="L195">                .map(id -&gt; parentId + &quot;_&quot; + id)</span>
+<span class="fc" id="L196">                .collect(Collectors.toList());</span>
+<span class="fc" id="L197">        pivotRepo.deleteAll(pivotIdsToDelete);</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (final String desiredId : desiredIds) {</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            if (!currentIds.contains(desiredId)) {</span>
+<span class="fc" id="L200">                attach(desiredId);</span>
+            }
+<span class="fc" id="L202">        }</span>
+<span class="fc" id="L203">    }</span>
+
+    /**
+     * Count the number of related records through the pivot table.
+     *
+     * @return number of related models
+     * @throws Exception on storage failure
+     */
+    public long count() throws StorageException {
+<span class="fc" id="L212">        return get().size();</span>
+    }
+
+    /**
+     * Extract the related model IDs from a list of pivot model instances.
+     *
+     * @param pivotEntries the pivot model instances to inspect
+     * @return list of related model ID strings, with {@code null} values filtered out
+     */
+    private List&lt;String&gt; collectRelatedIds(List&lt;P&gt; pivotEntries) {
+<span class="fc" id="L222">        return pivotEntries.stream()</span>
+<span class="fc" id="L223">                .map(p -&gt; {</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">                    final Object v = (p instanceof Model)</span>
+<span class="fc" id="L225">                            ? ((Model) p).get(relatedKey)</span>
+<span class="pc" id="L226">                            : p.toMap().get(relatedKey);</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">                    return v == null ? null : v.toString();</span>
+                })
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">                .filter(id -&gt; id != null)</span>
+<span class="fc" id="L230">                .collect(Collectors.toList());</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

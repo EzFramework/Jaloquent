@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.github.ezframework.jaloquent.model.ModelRepositoryFeatureTest
+-------------------------------------------------------------------------------
+Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s - in com.github.ezframework.jaloquent.model.ModelRepositoryFeatureTest

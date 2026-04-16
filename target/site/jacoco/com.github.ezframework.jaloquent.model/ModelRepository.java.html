@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Jaloquent</a> &gt; <a href="index.source.html" class="el_package">com.github.ezframework.jaloquent.model</a> &gt; <span class="el_source">ModelRepository.java</span></div><h1>ModelRepository.java</h1><pre class="source lang-java linenums">package com.github.ezframework.jaloquent.model;
+
+import com.github.ezframework.jaloquent.config.JaloquentConfig;
+import com.github.ezframework.jaloquent.exception.StorageException;
+import com.github.ezframework.jaloquent.model.TableRegistry.TableMeta;
+import com.github.ezframework.jaloquent.store.DataStore;
+import com.github.ezframework.jaloquent.store.sql.JdbcStore;
+import com.github.ezframework.javaquerybuilder.query.Query;
+import com.github.ezframework.javaquerybuilder.query.QueryableStorage;
+import com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder;
+import com.github.ezframework.javaquerybuilder.query.builder.SelectBuilder;
+import com.github.ezframework.javaquerybuilder.query.sql.SqlDialect;
+import com.github.ezframework.javaquerybuilder.query.sql.SqlResult;
+import io.micrometer.core.instrument.Counter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.slf4j.Logger;
+
+/**
+ * Generic repository for {@link BaseModel} instances backed by a {@link DataStore}.
+ *
+ * &lt;p&gt;When the prefix has a {@link TableRegistry} entry &lt;em&gt;and&lt;/em&gt; the store
+ * also implements {@link JdbcStore}, all operations use parameterized SQL.
+ * The SQL dialect defaults to {@link SqlDialect#STANDARD}; pass a different
+ * dialect at construction time if needed (e.g. {@code SqlDialect.MYSQL}).
+ *
+ * &lt;p&gt;For the {@link #query(Query)} method the supplied {@link Query} is
+ * rendered to a parameterized SQL string via the configured dialect, then
+ * executed directly — no manual WHERE-clause construction required.
+ *
+ * &lt;p&gt;When no SQL table is registered but the store implements
+ * {@link QueryableStorage}, {@link #query(Query)} falls back to the
+ * store's in-memory filter and loads results individually. When neither
+ * condition holds, an empty list is returned.
+ *
+ * @param &lt;T&gt; model type
+ */
+public class ModelRepository&lt;T extends BaseModel&gt; {
+
+    /**
+     * Get the logger for this class.
+     * @return the logger or null
+     */
+    private static Logger logger() {
+<span class="fc" id="L47">        return JaloquentConfig.getLogger(ModelRepository.class);</span>
+    }
+
+    /**
+     * Get the save counter for metrics.
+     * @return the counter or null
+     */
+    private static Counter saveCounter() {
+<span class="pc bpc" id="L55" title="2 of 4 branches missed.">        return JaloquentConfig.isMetricsEnabled() &amp;&amp; JaloquentConfig.getMeterRegistry() != null</span>
+<span class="fc" id="L56">            ? Counter.builder(&quot;jaloquent.repository.save&quot;).register(JaloquentConfig.getMeterRegistry())</span>
+<span class="nc" id="L57">            : null;</span>
+    }
+
+    /**
+     * Get the delete counter for metrics.
+     * @return the counter or null
+     */
+    private static Counter deleteCounter() {
+<span class="pc bpc" id="L65" title="2 of 4 branches missed.">        return JaloquentConfig.isMetricsEnabled() &amp;&amp; JaloquentConfig.getMeterRegistry() != null</span>
+<span class="fc" id="L66">            ? Counter.builder(&quot;jaloquent.repository.delete&quot;).register(JaloquentConfig.getMeterRegistry())</span>
+<span class="nc" id="L67">            : null;</span>
+    }
+
+    /**
+     * Get the query counter for metrics.
+     * @return the counter or null
+     */
+    private static Counter queryCounter() {
+<span class="pc bpc" id="L75" title="2 of 4 branches missed.">        return JaloquentConfig.isMetricsEnabled() &amp;&amp; JaloquentConfig.getMeterRegistry() != null</span>
+<span class="fc" id="L76">            ? Counter.builder(&quot;jaloquent.repository.query&quot;).register(JaloquentConfig.getMeterRegistry())</span>
+<span class="nc" id="L77">            : null;</span>
+    }
+
+    /** The backing data store. */
+    /** The backing data store. */
+    private final DataStore store;
+
+    /** The path prefix for storage. */
+    private final String prefix;
+
+    /** The model factory. */
+    private final ModelFactory&lt;T&gt; factory;
+
+    /** The SQL dialect for query rendering. */
+    private final SqlDialect dialect;
+
+    /**
+     * Create a repository using {@link SqlDialect#STANDARD} for SQL generation.
+     *
+     * @param store   backing store
+     * @param prefix  repository prefix (may be null)
+     * @param factory model factory
+     */
+    public ModelRepository(DataStore store, String prefix, ModelFactory&lt;T&gt; factory) {
+<span class="fc" id="L101">        this(store, prefix, factory, SqlDialect.STANDARD);</span>
+<span class="fc" id="L102">    }</span>
+
+    /**
+     * Create a repository with an explicit SQL dialect.
+     *
+     * @param store   backing store
+     * @param prefix  repository prefix (may be null)
+     * @param factory model factory
+     * @param dialect SQL dialect for query rendering
+     */
+<span class="fc" id="L112">    public ModelRepository(DataStore store, String prefix, ModelFactory&lt;T&gt; factory, SqlDialect dialect) {</span>
+<span class="fc" id="L113">        this.store   = store;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        this.prefix  = (prefix == null) ? &quot;&quot; : prefix;</span>
+<span class="fc" id="L115">        this.factory = factory;</span>
+<span class="fc" id="L116">        this.dialect = dialect;</span>
+<span class="fc" id="L117">    }</span>
+
+    private String storagePath(String id) {
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">        if (prefix.isEmpty()) {</span>
+<span class="nc" id="L121">            return id;</span>
+        }
+<span class="fc" id="L123">        return prefix + &quot;/&quot; + id;</span>
+    }
+
+    /**
+     * Persist a model.  When a SQL table is registered and the store supports
+     * JDBC, an upsert (INSERT … ON DUPLICATE KEY UPDATE) is issued; otherwise
+     * the flat-map store is used.
+     *
+     * @param model model to persist
+    * @throws StorageException on storage failure
+    */
+    public void save(T model) throws StorageException {
+        try {
+<span class="fc" id="L136">            final TableMeta meta = TableRegistry.get(prefix);</span>
+<span class="fc bfc" id="L137" title="All 4 branches covered.">            if (meta != null &amp;&amp; store instanceof JdbcStore) {</span>
+<span class="fc" id="L138">                final JdbcStore jdbc = (JdbcStore) store;</span>
+<span class="fc" id="L139">                final Map&lt;String, Object&gt; values = model.toMap();</span>
+
+<span class="fc" id="L141">                final StringBuilder updates = new StringBuilder();</span>
+<span class="fc" id="L142">                final var ib = QueryBuilder.insertInto(meta.tableName()).value(&quot;id&quot;, model.getId());</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">                for (final Map.Entry&lt;String, String&gt; col : meta.columns().entrySet()) {</span>
+<span class="fc" id="L144">                    final String cname = col.getKey();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">                    if (&quot;id&quot;.equals(cname)) {</span>
+<span class="fc" id="L146">                        continue;</span>
+                    }
+<span class="fc" id="L148">                    ib.value(cname, values.get(cname));</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                    if (updates.length() &gt; 0) {</span>
+<span class="fc" id="L150">                        updates.append(',');</span>
+                    }
+<span class="fc" id="L152">                    updates.append(cname).append(&quot;=VALUES(&quot;).append(cname).append(')');</span>
+<span class="fc" id="L153">                }</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">                final String onDupe = updates.length() &gt; 0 ? updates.toString() : &quot;id=id&quot;;</span>
+<span class="fc" id="L155">                final SqlResult insertResult = ib.build(dialect);</span>
+<span class="fc" id="L156">                final String sql = insertResult.getSql() + &quot; ON DUPLICATE KEY UPDATE &quot; + onDupe;</span>
+<span class="fc" id="L157">                jdbc.executeUpdate(sql, insertResult.getParameters());</span>
+<span class="fc" id="L158">                final Counter c = saveCounter();</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">                if (c != null) {</span>
+<span class="fc" id="L160">                    c.increment();</span>
+                }
+<span class="fc" id="L162">                final Logger log = logger();</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">                if (log != null) {</span>
+<span class="fc" id="L164">                    log.info(&quot;Saved model {} to SQL table {}&quot;, model.getId(), meta.tableName());</span>
+                }
+<span class="fc" id="L166">                return;</span>
+            }
+<span class="fc" id="L168">            store.save(model.getStoragePath(prefix), model.toMap());</span>
+<span class="fc" id="L169">            final Counter c = saveCounter();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">            if (c != null) {</span>
+<span class="fc" id="L171">                c.increment();</span>
+            }
+<span class="fc" id="L173">            final Logger log = logger();</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            if (log != null) {</span>
+<span class="fc" id="L175">                log.info(&quot;Saved model {} to flat-map store&quot;, model.getId());</span>
+            }
+        }
+<span class="nc" id="L178">        catch (Exception e) {</span>
+<span class="nc" id="L179">            final Logger log = logger();</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            if (log != null) {</span>
+<span class="nc" id="L181">                log.error(&quot;Failed to save model {}: {}&quot;, model.getId(), e.getMessage(), e);</span>
+            }
+<span class="nc" id="L183">            throw new StorageException(&quot;Failed to save model: &quot; + model.getId(), e);</span>
+<span class="fc" id="L184">        }</span>
+<span class="fc" id="L185">    }</span>
+
+    /**
+     * Find a model by id.
+     *
+     * @param id model identifier
+     * @return optional model, empty when not found
+     * @throws StorageException on storage failure
+     */
+    public Optional&lt;T&gt; find(String id) throws StorageException {
+        try {
+<span class="fc" id="L196">            final TableMeta meta = TableRegistry.get(prefix);</span>
+<span class="pc bpc" id="L197" title="1 of 4 branches missed.">            if (meta != null &amp;&amp; store instanceof JdbcStore) {</span>
+<span class="fc" id="L198">                final JdbcStore jdbc = (JdbcStore) store;</span>
+<span class="fc" id="L199">                final SqlResult findResult = new SelectBuilder()</span>
+<span class="fc" id="L200">                    .from(meta.tableName())</span>
+<span class="fc" id="L201">                    .whereEquals(&quot;id&quot;, id)</span>
+<span class="fc" id="L202">                    .limit(1)</span>
+<span class="fc" id="L203">                    .build(dialect);</span>
+<span class="fc" id="L204">                final List&lt;Map&lt;String, Object&gt;&gt; rows = jdbc.query(findResult.getSql(), findResult.getParameters());</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">                if (rows.isEmpty()) {</span>
+<span class="fc" id="L206">                    return Optional.empty();</span>
+                }
+<span class="fc" id="L208">                final Map&lt;String, Object&gt; row = rows.get(0);</span>
+<span class="fc" id="L209">                final T m = factory.create(id, row);</span>
+<span class="fc" id="L210">                m.fromMap(row);</span>
+<span class="fc" id="L211">                return Optional.of(m);</span>
+            }
+<span class="fc" id="L213">            return store.load(storagePath(id)).map(data -&gt; {</span>
+<span class="fc" id="L214">                final T m = factory.create(id, data);</span>
+<span class="fc" id="L215">                m.fromMap(data);</span>
+<span class="fc" id="L216">                return m;</span>
+            });
+        }
+<span class="nc" id="L219">        catch (Exception e) {</span>
+<span class="nc" id="L220">            final Logger log = logger();</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">            if (log != null) {</span>
+<span class="nc" id="L222">                log.error(&quot;Failed to find model {}: {}&quot;, id, e.getMessage(), e);</span>
+            }
+<span class="nc" id="L224">            throw new StorageException(&quot;Failed to find model: &quot; + id, e);</span>
+        }
+    }
+
+    /**
+     * Delete the model with the given id.
+     *
+     * @param id model identifier
+    * @throws StorageException on storage failure
+    */
+    public void delete(String id) throws StorageException {
+        try {
+<span class="fc" id="L236">            final TableMeta meta = TableRegistry.get(prefix);</span>
+<span class="pc bpc" id="L237" title="1 of 4 branches missed.">            if (meta != null &amp;&amp; store instanceof JdbcStore) {</span>
+<span class="fc" id="L238">                final JdbcStore jdbc = (JdbcStore) store;</span>
+<span class="fc" id="L239">                final SqlResult deleteResult = QueryBuilder.deleteFrom(meta.tableName())</span>
+<span class="fc" id="L240">                    .whereEquals(&quot;id&quot;, id)</span>
+<span class="fc" id="L241">                    .build(dialect);</span>
+<span class="fc" id="L242">                jdbc.executeUpdate(deleteResult.getSql(), deleteResult.getParameters());</span>
+<span class="fc" id="L243">                final Counter c = deleteCounter();</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">                if (c != null) {</span>
+<span class="fc" id="L245">                    c.increment();</span>
+                }
+<span class="fc" id="L247">                final Logger log = logger();</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">                if (log != null) {</span>
+<span class="fc" id="L249">                    log.info(&quot;Deleted model {} from SQL table {}&quot;, id, meta.tableName());</span>
+                }
+<span class="fc" id="L251">                return;</span>
+            }
+<span class="fc" id="L253">            store.delete(storagePath(id));</span>
+<span class="fc" id="L254">            final Counter c = deleteCounter();</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">            if (c != null) {</span>
+<span class="fc" id="L256">                c.increment();</span>
+            }
+<span class="fc" id="L258">            final Logger log = logger();</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">            if (log != null) {</span>
+<span class="fc" id="L260">                log.info(&quot;Deleted model {} from flat-map store&quot;, id);</span>
+            }
+        }
+<span class="nc" id="L263">        catch (Exception e) {</span>
+<span class="nc" id="L264">            final Logger log = logger();</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            if (log != null) {</span>
+<span class="nc" id="L266">                log.error(&quot;Failed to delete model {}: {}&quot;, id, e.getMessage(), e);</span>
+            }
+<span class="nc" id="L268">            throw new StorageException(&quot;Failed to delete model: &quot; + id, e);</span>
+<span class="fc" id="L269">        }</span>
+<span class="fc" id="L270">    }</span>
+
+    /**
+     * Check whether a model with the given id exists.
+     *
+     * @param id model identifier
+     * @return true when the model exists
+     * @throws StorageException on storage failure
+     */
+    public boolean exists(String id) throws StorageException {
+        try {
+<span class="fc" id="L281">            final TableMeta meta = TableRegistry.get(prefix);</span>
+<span class="pc bpc" id="L282" title="1 of 4 branches missed.">            if (meta != null &amp;&amp; store instanceof JdbcStore) {</span>
+<span class="fc" id="L283">                final JdbcStore jdbc = (JdbcStore) store;</span>
+<span class="fc" id="L284">                final SqlResult existsResult = new SelectBuilder()</span>
+<span class="fc" id="L285">                    .from(meta.tableName())</span>
+<span class="fc" id="L286">                    .select(&quot;1&quot;)</span>
+<span class="fc" id="L287">                    .whereEquals(&quot;id&quot;, id)</span>
+<span class="fc" id="L288">                    .limit(1)</span>
+<span class="fc" id="L289">                    .build(dialect);</span>
+<span class="fc" id="L290">                final List&lt;Map&lt;String, Object&gt;&gt; rows = jdbc.query(existsResult.getSql(), existsResult.getParameters());</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">                return !rows.isEmpty();</span>
+            }
+<span class="fc" id="L293">            return store.exists(storagePath(id));</span>
+        }
+<span class="nc" id="L295">        catch (Exception e) {</span>
+<span class="nc" id="L296">            final Logger log = logger();</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            if (log != null) {</span>
+<span class="nc" id="L298">                log.error(&quot;Failed to check existence of model {}: {}&quot;, id, e.getMessage(), e);</span>
+            }
+<span class="nc" id="L300">            throw new StorageException(&quot;Failed to check existence of model: &quot; + id, e);</span>
+        }
+    }
+
+    /**
+     * Query for models matching the given {@link Query}.
+     *
+     * &lt;p&gt;SQL path: the query is rendered to a parameterized SQL string via the
+     * configured {@link SqlDialect} and executed against the JDBC store.
+     *
+     * &lt;p&gt;In-memory path: when no SQL table is registered but the store
+     * implements {@link QueryableStorage}, the store's in-memory filter returns
+     * matching ids which are then loaded individually.
+     *
+     * @param q query built with
+     *          {@link com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder}
+     * @return matching models (may be empty); never null
+    * @throws StorageException on storage or query errors
+    */
+    public List&lt;T&gt; query(Query q) throws StorageException {
+<span class="fc" id="L320">        final List&lt;T&gt; out = new ArrayList&lt;&gt;();</span>
+        try {
+<span class="fc" id="L322">            final TableMeta meta = TableRegistry.get(prefix);</span>
+<span class="pc bpc" id="L323" title="1 of 4 branches missed.">            if (meta != null &amp;&amp; store instanceof JdbcStore) {</span>
+<span class="fc" id="L324">                final JdbcStore jdbc = (JdbcStore) store;</span>
+<span class="fc" id="L325">                q.setTable(meta.tableName());</span>
+<span class="fc" id="L326">                final SqlResult result = dialect.render(q);</span>
+<span class="fc" id="L327">                final List&lt;Map&lt;String, Object&gt;&gt; rows = jdbc.query(result.getSql(), result.getParameters());</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                for (final Map&lt;String, Object&gt; row : rows) {</span>
+<span class="fc" id="L329">                    final Object idVal = row.get(&quot;id&quot;);</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">                    final String idStr = idVal == null ? null : idVal.toString();</span>
+<span class="fc" id="L331">                    final T m = factory.create(idStr, row);</span>
+<span class="fc" id="L332">                    m.fromMap(row);</span>
+<span class="fc" id="L333">                    out.add(m);</span>
+<span class="fc" id="L334">                }</span>
+<span class="fc" id="L335">                final Counter c = queryCounter();</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">                if (c != null) {</span>
+<span class="fc" id="L337">                    c.increment();</span>
+                }
+<span class="fc" id="L339">                final Logger log = logger();</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">                if (log != null) {</span>
+<span class="fc" id="L341">                    log.info(&quot;Queried {} rows from SQL table {}&quot;, out.size(), meta.tableName());</span>
+                }
+<span class="fc" id="L343">                return out;</span>
+            }
+
+<span class="fc bfc" id="L346" title="All 2 branches covered.">            if (store instanceof QueryableStorage) {</span>
+<span class="fc" id="L347">                final List&lt;String&gt; ids = ((QueryableStorage) store).query(q);</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">                for (final String id : ids) {</span>
+<span class="fc" id="L349">                    find(id).ifPresent(out::add);</span>
+<span class="fc" id="L350">                }</span>
+<span class="fc" id="L351">                final Counter c = queryCounter();</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">                if (c != null) {</span>
+<span class="fc" id="L353">                    c.increment();</span>
+                }
+<span class="fc" id="L355">                final Logger log = logger();</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">                if (log != null) {</span>
+<span class="fc" id="L357">                    log.info(&quot;Queried {} rows from flat-map store&quot;, out.size());</span>
+                }
+<span class="fc" id="L359">                return out;</span>
+            }
+
+<span class="fc" id="L362">            return out;</span>
+        }
+<span class="nc" id="L364">        catch (final Exception e) {</span>
+<span class="nc" id="L365">            final Logger log = logger();</span>
+<span class="nc bnc" id="L366" title="All 2 branches missed.">            if (log != null) {</span>
+<span class="nc" id="L367">                log.error(&quot;Failed to query repository: {}&quot;, e.getMessage(), e);</span>
+            }
+<span class="nc" id="L369">            throw new StorageException(&quot;Failed to query repository&quot;, e);</span>
+        }
+    }
+
+    /**
+     * Delete all records where the given column equals the given value.
+     *
+     * &lt;p&gt;On the SQL path (when a {@link TableRegistry} entry exists and the store
+     * implements {@link JdbcStore}) a single parameterised
+     * {@code DELETE FROM table WHERE column = ?} statement is issued with no prior SELECT.
+     *
+     * &lt;p&gt;On the flat-map path, records matching the condition are loaded via
+     * {@link #query(Query)} (requires the store to implement
+     * {@link QueryableStorage}) and then deleted individually.
+     *
+     * @param column the column name to filter on
+     * @param value  the value the column must equal
+    * @throws StorageException on storage failure
+    */
+    public void deleteWhere(String column, Object value) throws StorageException {
+        try {
+<span class="fc" id="L390">            final TableMeta meta = TableRegistry.get(prefix);</span>
+<span class="pc bpc" id="L391" title="1 of 4 branches missed.">            if (meta != null &amp;&amp; store instanceof JdbcStore) {</span>
+<span class="fc" id="L392">                final JdbcStore jdbc = (JdbcStore) store;</span>
+<span class="fc" id="L393">                final SqlResult deleteWhereResult = QueryBuilder.deleteFrom(meta.tableName())</span>
+<span class="fc" id="L394">                    .whereEquals(column, value)</span>
+<span class="fc" id="L395">                    .build(dialect);</span>
+<span class="fc" id="L396">                jdbc.executeUpdate(deleteWhereResult.getSql(), deleteWhereResult.getParameters());</span>
+<span class="fc" id="L397">                final Counter c = deleteCounter();</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">                if (c != null) {</span>
+<span class="fc" id="L399">                    c.increment();</span>
+                }
+<span class="fc" id="L401">                final Logger log = logger();</span>
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">                if (log != null) {</span>
+<span class="fc" id="L403">                    log.info(&quot;Bulk-deleted from SQL table {} where {}={}&quot;, meta.tableName(), column, value);</span>
+                }
+<span class="fc" id="L405">                return;</span>
+            }
+<span class="fc" id="L407">            final List&lt;T&gt; matching = query(new QueryBuilder().whereEquals(column, value).build());</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">            for (final T m : matching) {</span>
+<span class="fc" id="L409">                store.delete(storagePath(m.getId()));</span>
+<span class="fc" id="L410">            }</span>
+<span class="fc" id="L411">            final Counter c = deleteCounter();</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">            if (c != null) {</span>
+<span class="fc" id="L413">                c.increment();</span>
+            }
+        }
+<span class="nc" id="L416">        catch (Exception e) {</span>
+<span class="nc" id="L417">            final Logger log = logger();</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">            if (log != null) {</span>
+<span class="nc" id="L419">                log.error(&quot;Failed to deleteWhere {}={}: {}&quot;, column, value, e.getMessage(), e);</span>
+            }
+<span class="nc" id="L421">            throw new StorageException(&quot;Failed to deleteWhere: &quot; + column + &quot;=&quot; + value, e);</span>
+<span class="fc" id="L422">        }</span>
+<span class="fc" id="L423">    }</span>
+
+    /**
+     * Delete all records with the given primary key ids in a single bulk operation.
+     *
+     * &lt;p&gt;On the SQL path a single parameterised
+     * {@code DELETE FROM table WHERE id IN (?, …)} statement is issued.
+     * On the flat-map path each id is deleted individually.
+     * When {@code ids} is {@code null} or empty this method is a no-op.
+     *
+     * @param ids record identifiers to delete ({@code null} or empty is a no-op)
+    * @throws StorageException on storage failure
+    */
+    public void deleteAll(List&lt;String&gt; ids) throws StorageException {
+<span class="pc bpc" id="L437" title="1 of 4 branches missed.">        if (ids == null || ids.isEmpty()) {</span>
+<span class="fc" id="L438">            return;</span>
+        }
+        try {
+<span class="fc" id="L441">            final TableMeta meta = TableRegistry.get(prefix);</span>
+<span class="pc bpc" id="L442" title="1 of 4 branches missed.">            if (meta != null &amp;&amp; store instanceof JdbcStore) {</span>
+<span class="fc" id="L443">                final JdbcStore jdbc = (JdbcStore) store;</span>
+<span class="fc" id="L444">                final SqlResult deleteAllResult = QueryBuilder.deleteFrom(meta.tableName())</span>
+<span class="fc" id="L445">                    .whereIn(&quot;id&quot;, new ArrayList&lt;&gt;(ids))</span>
+<span class="fc" id="L446">                    .build(dialect);</span>
+<span class="fc" id="L447">                jdbc.executeUpdate(deleteAllResult.getSql(), deleteAllResult.getParameters());</span>
+<span class="fc" id="L448">                final Counter c = deleteCounter();</span>
+<span class="pc bpc" id="L449" title="1 of 2 branches missed.">                if (c != null) {</span>
+<span class="fc" id="L450">                    c.increment();</span>
+                }
+<span class="fc" id="L452">                final Logger log = logger();</span>
+<span class="pc bpc" id="L453" title="1 of 2 branches missed.">                if (log != null) {</span>
+<span class="fc" id="L454">                    log.info(&quot;Bulk-deleted {} records from SQL table {}&quot;, ids.size(), meta.tableName());</span>
+                }
+<span class="fc" id="L456">                return;</span>
+            }
+<span class="fc bfc" id="L458" title="All 2 branches covered.">            for (final String id : ids) {</span>
+<span class="fc" id="L459">                store.delete(storagePath(id));</span>
+<span class="fc" id="L460">            }</span>
+<span class="fc" id="L461">            final Counter c = deleteCounter();</span>
+<span class="pc bpc" id="L462" title="1 of 2 branches missed.">            if (c != null) {</span>
+<span class="fc" id="L463">                c.increment();</span>
+            }
+        }
+<span class="nc" id="L466">        catch (Exception e) {</span>
+<span class="nc" id="L467">            final Logger log = logger();</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">            if (log != null) {</span>
+<span class="nc" id="L469">                log.error(&quot;Failed to deleteAll: {}&quot;, e.getMessage(), e);</span>
+            }
+<span class="nc" id="L471">            throw new StorageException(&quot;Failed to deleteAll&quot;, e);</span>
+<span class="fc" id="L472">        }</span>
+<span class="fc" id="L473">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>
