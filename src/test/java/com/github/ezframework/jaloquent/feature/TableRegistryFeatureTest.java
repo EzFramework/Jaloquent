@@ -1,4 +1,6 @@
-package com.github.ezframework.jaloquent.model;
+package com.github.ezframework.jaloquent.feature;
+
+import com.github.ezframework.jaloquent.model.TableRegistry;
 
 import org.junit.jupiter.api.Test;
 

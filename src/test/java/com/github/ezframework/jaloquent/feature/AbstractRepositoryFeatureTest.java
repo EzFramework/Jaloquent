@@ -1,5 +1,6 @@
-package com.github.ezframework.jaloquent.repository;
+package com.github.ezframework.jaloquent.feature;
 
+import com.github.ezframework.jaloquent.repository.AbstractRepository;
 import com.github.ezframework.jaloquent.store.DataStore;
 import org.junit.jupiter.api.Test;
 

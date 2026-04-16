@@ -1,4 +1,4 @@
-package com.github.ezframework.jaloquent.relation;
+package com.github.ezframework.jaloquent.feature;
 
 import com.github.ezframework.jaloquent.model.BaseModel;
 import com.github.ezframework.jaloquent.model.Model;
@@ -6,6 +6,10 @@ import com.github.ezframework.jaloquent.model.ModelFactory;
 import com.github.ezframework.jaloquent.model.ModelRepository;
 import com.github.ezframework.jaloquent.model.PivotModel;
 import com.github.ezframework.jaloquent.model.TableRegistry;
+import com.github.ezframework.jaloquent.relation.BelongsTo;
+import com.github.ezframework.jaloquent.relation.BelongsToMany;
+import com.github.ezframework.jaloquent.relation.HasMany;
+import com.github.ezframework.jaloquent.relation.HasOne;
 import com.github.ezframework.jaloquent.store.DataStore;
 import com.github.ezframework.jaloquent.store.sql.JdbcStore;
 import com.github.ezframework.javaquerybuilder.query.Query;
