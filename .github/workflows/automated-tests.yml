@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: 25
       - name: Run Unit Tests
-        run: mvn -B -Dtest="**/unit/**/*" test
+        run: mvn -B -Dtest="**/unit/*" test
 
   feature-tests:
     name: Feature Tests
@@ -31,4 +31,4 @@ jobs:
           distribution: 'temurin'
           java-version: 25
       - name: Run Feature Tests
-        run: mvn -B -Dtest="**/feature/**/*" test
+        run: mvn -B -Dtest="**/feature/*" test
