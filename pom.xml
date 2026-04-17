@@ -5,7 +5,7 @@
 
     <groupId>com.github.EzFramework</groupId>
     <artifactId>Jaloquent</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
     <name>Jaloquent</name>
     <description>
@@ -79,6 +79,14 @@
             <artifactId>junit-jupiter-params</artifactId>
             <version>5.10.0</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Jaker: optional faker library for ModelFaker; consumers must declare it explicitly -->
+        <dependency>
+            <groupId>com.github.EzFramework</groupId>
+            <artifactId>jaker</artifactId>
+            <version>1.0.0</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
