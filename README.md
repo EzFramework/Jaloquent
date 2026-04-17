@@ -2,6 +2,8 @@
 
 [![](https://jitpack.io/v/EzFramework/Jaloquent.svg)](https://jitpack.io/#EzFramework/Jaloquent)
 [![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.0.0-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
+![Codecov](https://img.shields.io/codecov/c/github/EzFramework/Jaker)
+
 
 Eloquent-style active-record model and repository layer for Java, built on top of the [EzFramework Java Query Builder](https://github.com/EzFramework/JavaQueryBuilder).  
 Supports both SQL (JDBC) and flat-map stores with a consistent API inspired by Laravel's Eloquent ORM.
