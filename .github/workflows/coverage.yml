@@ -51,11 +51,8 @@ jobs:
         with:
           name: jacoco-report
           path: target/site/jacoco/
-      - name: Comment JaCoCo coverage summary in PR
-        if: github.event_name == 'pull_request'
-        uses: madrapps/jacoco-report@v1.7.2
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          paths: target/site/jacoco/jacoco.xml
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 0
-          min-coverage-changed-files: 0
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: target/site/jacoco/jacoco.xml
