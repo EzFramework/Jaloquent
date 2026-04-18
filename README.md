@@ -19,6 +19,9 @@ Supports both SQL (JDBC) and flat-map stores with a consistent API inspired by L
 
 ## Installation
 
+Jaloquent can be easily installed through Jitpack:
+https://jitpack.io/#EzFramework/jaloquent
+
 ### Maven
 
 Add the JitPack repository and the dependency to your `pom.xml`:
