@@ -1,7 +1,7 @@
 # Jaloquent
 
 [![](https://jitpack.io/v/EzFramework/Jaloquent.svg)](https://jitpack.io/#EzFramework/Jaloquent)
-[![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.0.4-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
+[![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.1.0-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
 ![Codecov](https://img.shields.io/codecov/c/github/EzFramework/Jaker)
 
 
@@ -37,7 +37,7 @@ Add the JitPack repository and the dependency to your `pom.xml`:
 <dependency>
     <groupId>com.github.EzFramework</groupId>
     <artifactId>jaloquent</artifactId>
-    <version>1.0.4</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -49,7 +49,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.EzFramework:jaloquent:1.0.4'
+    implementation 'com.github.EzFramework:jaloquent:1.1.0'
 }
 ```
 
@@ -266,6 +266,32 @@ Retrieve the pivot entry directly through its repository if you need to read tho
 ### Pivot ID convention
 
 Pivot record IDs are generated as `{parentId}_{relatedId}` (e.g. `"u1_r2"`). This is the key used for `attach`, `detach`, and repository-level lookups.
+
+---
+
+## Transactions
+
+Jaloquent supports atomic multi-step operations through `TransactionalJdbcStore`.
+Implement the interface in your store, then use the try-with-resources handle or
+the lambda callback:
+
+```java
+// Try-with-resources (auto-rollback on exception)
+try (Transaction tx = repo.transaction()) {
+    repo.save(orderModel);
+    repo.save(inventoryModel);
+    tx.commit();
+}
+
+// Lambda callback (auto-commit on success, auto-rollback on exception)
+repo.transaction(() -> {
+    repo.save(orderModel);
+    repo.save(inventoryModel);
+});
+```
+
+See the [Transactions documentation](https://ezframework.github.io/Jaloquent/transactions)
+for the full guide.
 
 ---
 
