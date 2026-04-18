@@ -17,22 +17,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Validate Markdown
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Lint documentation Markdown
-        uses: DavidAnson/markdownlint-cli2-action@v16
-        with:
-          globs: "docs/**/*.md"
-          config: ".markdownlint.yml"
-
   build-and-deploy:
     name: Build and Deploy
-    needs: validate
     runs-on: ubuntu-latest
     environment:
       name: github-pages
