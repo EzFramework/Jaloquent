@@ -327,7 +327,10 @@ public class DataSourceJdbcStore implements DataStore, TransactionalJdbcStore {
      * Map all rows in a {@link ResultSet} to a list of column-to-value maps.
      *
      * <p>Uses {@link ResultSetMetaData#getColumnLabel(int)} so SQL aliases are
-     * preserved as map keys.
+     * preserved as map keys. Column labels are normalised to lower-case so that
+     * databases which return upper-case column names (e.g. H2 in its default mode)
+     * produce keys consistent with the lower-case column names used by model
+     * attributes and {@link com.github.ezframework.jaloquent.model.TableRegistry}.
      *
      * @param rs an open result set positioned before the first row
      * @return list of rows; empty list when the result set is empty
@@ -340,7 +343,7 @@ public class DataSourceJdbcStore implements DataStore, TransactionalJdbcStore {
         while (rs.next()) {
             final Map<String, Object> row = new LinkedHashMap<>();
             for (int i = 1; i <= colCount; i++) {
-                row.put(meta.getColumnLabel(i), rs.getObject(i));
+                row.put(meta.getColumnLabel(i).toLowerCase(), rs.getObject(i));
             }
             rows.add(row);
         }

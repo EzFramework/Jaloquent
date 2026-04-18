@@ -127,7 +127,9 @@ public class InMemoryDataStore implements DataStore, QueryableStorage {
     @Override
     public List<String> query(Query query) throws Exception {
         final List<ConditionEntry> conditions = query.getConditions();
-        final Integer limit = query.getLimit();
+        final Integer rawLimit = query.getLimit();
+        // QueryBuilder uses -1 as the "no limit" sentinel; treat anything < 0 as unlimited
+        final Integer limit = (rawLimit != null && rawLimit >= 0) ? rawLimit : null;
         final List<String> results = new ArrayList<>();
         for (final Map.Entry<String, Map<String, Object>> entry : store.entrySet()) {
             if (matchesConditions(entry.getValue(), conditions)) {
