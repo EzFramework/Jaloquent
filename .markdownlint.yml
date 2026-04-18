@@ -1,0 +1,22 @@
+---
+# markdownlint configuration
+# https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+default: true
+
+# MD013 — Line length: documentation lines are allowed to exceed 80 chars
+MD013: false
+
+# MD033 — Inline HTML: needed for Jekyll/Liquid includes and badge images
+MD033: false
+
+# MD041 — First line must be H1: front-matter pages don't start with a heading
+MD041: false
+
+# MD024 — No duplicate headings: allow sibling duplicates across sections
+MD024:
+  siblings_only: true
+
+# MD007 — Unordered list indentation: use 2-space indent under list items
+MD007:
+  indent: 2
