@@ -423,6 +423,59 @@ public class ModelRepository<T extends BaseModel> {
     }
 
     /**
+     * Delete all records whose columns match the conditions carried by the given {@link Query}.
+     *
+     * <p>On the SQL path (when a {@link TableRegistry} entry exists and the store
+     * implements {@link JdbcStore}) a single parameterised DELETE statement is issued
+     * via {@link SqlDialect#renderDelete(Query)}.
+     *
+     * <p>On the flat-map path, records matching the query are loaded via
+     * {@link #query(Query)} (requires the store to implement
+     * {@link QueryableStorage}) and then deleted individually.
+     *
+     * <p>If the query carries no conditions this method deletes all records in the
+     * table (SQL path) or all records returned by the store's query (flat-map path).
+     *
+     * @param q query whose WHERE conditions select the records to delete
+     * @throws StorageException on storage failure
+     */
+    public void deleteWhere(Query q) throws StorageException {
+        try {
+            final TableMeta meta = TableRegistry.get(prefix);
+            if (meta != null && store instanceof JdbcStore) {
+                final JdbcStore jdbc = (JdbcStore) store;
+                q.setTable(meta.tableName());
+                final SqlResult deleteResult = dialect.renderDelete(q);
+                jdbc.executeUpdate(deleteResult.getSql(), deleteResult.getParameters());
+                final Counter c = deleteCounter();
+                if (c != null) {
+                    c.increment();
+                }
+                final Logger log = logger();
+                if (log != null) {
+                    log.info("Query-deleted from SQL table {}", meta.tableName());
+                }
+                return;
+            }
+            final List<T> matching = query(q);
+            for (final T m : matching) {
+                store.delete(storagePath(m.getId()));
+            }
+            final Counter c = deleteCounter();
+            if (c != null) {
+                c.increment();
+            }
+        }
+        catch (Exception e) {
+            final Logger log = logger();
+            if (log != null) {
+                log.error("Failed to deleteWhere(Query): {}", e.getMessage(), e);
+            }
+            throw new StorageException("Failed to deleteWhere(Query)", e);
+        }
+    }
+
+    /**
      * Delete all records with the given primary key ids in a single bulk operation.
      *
      * <p>On the SQL path a single parameterised

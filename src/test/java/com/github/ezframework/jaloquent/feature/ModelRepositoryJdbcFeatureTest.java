@@ -417,4 +417,106 @@ public class ModelRepositoryJdbcFeatureTest {
         // Data went to the flat-map store, not JDBC
         assertTrue(store.exists(prefix + "/fm1"));
     }
+
+    // =========================================================================
+    // deleteWhere(Query) — SQL path
+    // =========================================================================
+
+    @Test
+    void deleteWhereQuerySqlPathIssuesSingleDeleteStatement() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "events",
+            Map.of("id", "VARCHAR(36)", "type", "VARCHAR(50)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        sqlRepo(store, prefix).deleteWhere(
+            com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder.class
+                .cast(new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+                    .whereEquals("type", "CLICK"))
+                .build()
+        );
+
+        assertEquals(1, store.updateSqls.size());
+        assertFalse(store.dataStoreDeleteCalled);
+    }
+
+    @Test
+    void deleteWhereQuerySqlPathSqlStartsWithDeleteFrom() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "events",
+            Map.of("id", "VARCHAR(36)", "type", "VARCHAR(50)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        sqlRepo(store, prefix).deleteWhere(
+            new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+                .whereEquals("type", "VIEW")
+                .build()
+        );
+
+        final String sql = store.updateSqls.get(0).toUpperCase();
+        assertTrue(sql.startsWith("DELETE FROM"), "Expected DELETE FROM but got: " + sql);
+        assertTrue(sql.contains("WHERE"),         "Expected WHERE in: " + sql);
+    }
+
+    @Test
+    void deleteWhereQuerySqlPathPassesWhereEqValueAsParam() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "events",
+            Map.of("id", "VARCHAR(36)", "type", "VARCHAR(50)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        sqlRepo(store, prefix).deleteWhere(
+            new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+                .whereEquals("type", "SCROLL")
+                .build()
+        );
+
+        final String sql = store.updateSqls.get(0);
+        assertFalse(sql.contains("SCROLL"), "Value must not appear in SQL string");
+        assertTrue(store.updateParams.get(0).contains("SCROLL"), "Value must be a bind parameter");
+    }
+
+    @Test
+    void deleteWhereQuerySqlPathPassesWhereInValuesAsParams() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "events",
+            Map.of("id", "VARCHAR(36)", "type", "VARCHAR(50)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        sqlRepo(store, prefix).deleteWhere(
+            new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+                .whereIn("type", List.of("CLICK", "VIEW", "SCROLL"))
+                .build()
+        );
+
+        final String sql          = store.updateSqls.get(0);
+        final List<Object> params = store.updateParams.get(0);
+        assertFalse(sql.contains("CLICK"),  "whereIn value must not appear in SQL");
+        assertFalse(sql.contains("VIEW"),   "whereIn value must not appear in SQL");
+        assertFalse(sql.contains("SCROLL"), "whereIn value must not appear in SQL");
+        assertTrue(params.contains("CLICK"),  "CLICK must be a bind parameter");
+        assertTrue(params.contains("VIEW"),   "VIEW must be a bind parameter");
+        assertTrue(params.contains("SCROLL"), "SCROLL must be a bind parameter");
+        assertEquals(3, params.size(), "Expected 3 bind parameters for 3 IN values");
+    }
+
+    @Test
+    void deleteWhereQuerySqlPathMultiConditionPassesAllValuesAsParams() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "events",
+            Map.of("id", "VARCHAR(36)", "type", "VARCHAR(50)", "status", "VARCHAR(20)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        sqlRepo(store, prefix).deleteWhere(
+            new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+                .whereEquals("type", "CLICK")
+                .whereEquals("status", "PENDING")
+                .build()
+        );
+
+        final List<Object> params = store.updateParams.get(0);
+        assertTrue(params.contains("CLICK"),   "type value must be a bind parameter");
+        assertTrue(params.contains("PENDING"), "status value must be a bind parameter");
+        assertEquals(2, params.size(), "Expected exactly 2 bind parameters");
+    }
 }
