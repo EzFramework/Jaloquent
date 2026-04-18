@@ -5,6 +5,7 @@ import com.github.ezframework.jaloquent.exception.StorageException;
 import com.github.ezframework.jaloquent.model.TableRegistry.TableMeta;
 import com.github.ezframework.jaloquent.store.DataStore;
 import com.github.ezframework.jaloquent.store.sql.JdbcStore;
+import com.github.ezframework.jaloquent.store.sql.TransactionalJdbcStore;
 import com.github.ezframework.javaquerybuilder.query.Query;
 import com.github.ezframework.javaquerybuilder.query.QueryableStorage;
 import com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder;
@@ -626,6 +627,54 @@ public class ModelRepository<T extends BaseModel> {
                 log.error("Failed to deleteAll: {}", e.getMessage(), e);
             }
             throw new StorageException("Failed to deleteAll", e);
+        }
+    }
+
+    /**
+     * Open a database transaction and return a {@link Transaction} handle.
+     *
+     * <p>The handle implements {@link AutoCloseable} and is intended for use in a
+     * try-with-resources block.  If the block exits without an explicit call to
+     * {@link Transaction#commit()}, the transaction is automatically rolled back.
+     *
+     * <p>Requires the configured store to implement {@link TransactionalJdbcStore}.
+     * Throws {@link StorageException} when the store does not support transactions.
+     *
+     * @return an open {@link Transaction} tied to this repository's store
+     * @throws StorageException if the store does not support transactions or if
+     *                          the transaction cannot be started
+     */
+    public Transaction transaction() throws StorageException {
+        if (store instanceof TransactionalJdbcStore) {
+            return new Transaction((TransactionalJdbcStore) store);
+        }
+        throw new StorageException("Store does not support transactions");
+    }
+
+    /**
+     * Execute the given callback inside a single database transaction.
+     *
+     * <p>Opens a transaction, calls {@code callback.execute()}, then commits.
+     * If the callback throws, the transaction is rolled back and the exception
+     * is propagated — wrapped in a {@link StorageException} if it is not already
+     * one.
+     *
+     * <p>Requires the configured store to implement {@link TransactionalJdbcStore}.
+     *
+     * @param callback the block of work to execute atomically
+     * @throws StorageException if the store does not support transactions, if the
+     *                          callback throws, or if commit/rollback fails
+     */
+    public void transaction(TransactionCallback callback) throws StorageException {
+        try (Transaction tx = transaction()) {
+            callback.execute();
+            tx.commit();
+        }
+        catch (StorageException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new StorageException("Transaction failed", e);
         }
     }
 
