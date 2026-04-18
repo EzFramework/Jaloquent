@@ -1,11 +1,13 @@
 package com.github.ezframework.jaloquent.feature;
 
+import com.github.ezframework.jaloquent.exception.StorageException;
 import com.github.ezframework.jaloquent.model.Model;
 import com.github.ezframework.jaloquent.model.ModelRepository;
 import com.github.ezframework.jaloquent.model.TableRegistry;
 import com.github.ezframework.jaloquent.store.DataStore;
 import com.github.ezframework.jaloquent.store.sql.JdbcStore;
 import com.github.ezframework.javaquerybuilder.query.Query;
+import com.github.ezframework.javaquerybuilder.query.QueryableStorage;
 import com.github.ezframework.javaquerybuilder.query.sql.SqlDialect;
 import org.junit.jupiter.api.Test;
 
@@ -82,6 +84,87 @@ public class ModelRepositoryJdbcFeatureTest {
         @Override public Optional<Map<String, Object>> load(String path)  { return Optional.ofNullable(map.get(path)); }
         @Override public void delete(String path)                          { map.remove(path); }
         @Override public boolean exists(String path)                       { return map.containsKey(path); }
+    }
+
+    /**
+     * {@link RecordingJdbcStore} variant whose {@link #executeUpdate} always throws
+     * — used to drive the exception-handling paths in repository methods.
+     */
+    static class ThrowingJdbcStore extends RecordingJdbcStore {
+
+        /** The exception thrown from every {@link #executeUpdate} call. */
+        private final RuntimeException toThrow;
+
+        /**
+         * @param ex exception to throw from every {@link #executeUpdate} call
+         */
+        ThrowingJdbcStore(RuntimeException ex) {
+            this.toThrow = ex;
+        }
+
+        @Override
+        public int executeUpdate(String sql, List<Object> params) throws Exception {
+            throw toThrow;
+        }
+    }
+
+    /**
+     * {@link DataStore} that also implements {@link QueryableStorage} — used to exercise
+     * the flat-map path in {@code deleteWhere(Query)}.
+     *
+     * <p>Returns a pre-configured list of IDs from {@link #query(Query)}.
+     */
+    static class QueryableFlatStore implements DataStore, QueryableStorage {
+
+        /** Backing storage map keyed by path. */
+        private final Map<String, Map<String, Object>> map = new HashMap<>();
+
+        /** IDs returned by {@link #query(Query)}, configured per test. */
+        private List<String> resultIds = new ArrayList<>();
+
+        /**
+         * Pre-populate a record at {@code path} with {@code data}.
+         *
+         * @param path storage path
+         * @param data record attributes
+         */
+        void putRecord(String path, Map<String, Object> data) {
+            map.put(path, new HashMap<>(data));
+        }
+
+        /**
+         * Set the IDs that {@link #query(Query)} will return.
+         *
+         * @param ids model IDs to return
+         */
+        void setQueryResultIds(List<String> ids) {
+            resultIds = new ArrayList<>(ids);
+        }
+
+        @Override
+        public void save(String path, Map<String, Object> data) {
+            map.put(path, new HashMap<>(data));
+        }
+
+        @Override
+        public Optional<Map<String, Object>> load(String path) {
+            return Optional.ofNullable(map.get(path));
+        }
+
+        @Override
+        public void delete(String path) {
+            map.remove(path);
+        }
+
+        @Override
+        public boolean exists(String path) {
+            return map.containsKey(path);
+        }
+
+        @Override
+        public List<String> query(Query q) {
+            return new ArrayList<>(resultIds);
+        }
     }
 
     // =========================================================================
@@ -692,5 +775,104 @@ public class ModelRepositoryJdbcFeatureTest {
         assertThrows(UnsupportedOperationException.class,
             () -> repo.deleteWhereExists(subquery),
             "deleteWhereExists must throw on a non-SQL store");
+    }
+
+    // =========================================================================
+    // deleteWhere(Query) — flat-map path
+    // =========================================================================
+
+    @Test
+    void deleteWhereQueryFlatMapPathDeletesMatchingRecords() throws Exception {
+        final String prefix = uniquePrefix();
+        // No table registered → flat-map path taken
+        final QueryableFlatStore store = new QueryableFlatStore();
+        final String path = prefix + "/r1";
+        store.putRecord(path, Map.of("id", "r1", "type", "click"));
+        store.setQueryResultIds(List.of("r1"));
+
+        final ModelRepository<TestModel> repo =
+            new ModelRepository<>(store, prefix, (id, data) -> new TestModel(id));
+        repo.deleteWhere(
+            new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+                .whereEquals("type", "click")
+                .build()
+        );
+
+        assertFalse(store.exists(path),
+            "Flat-map path must delete records returned by QueryableStorage");
+    }
+
+    @Test
+    void deleteWhereQueryFlatMapPathEmptyResultDoesNotDelete() throws Exception {
+        final String prefix = uniquePrefix();
+        final QueryableFlatStore store = new QueryableFlatStore();
+        final String path = prefix + "/r2";
+        store.putRecord(path, Map.of("id", "r2", "type", "view"));
+        store.setQueryResultIds(List.of()); // empty — loop body never executes
+
+        final ModelRepository<TestModel> repo =
+            new ModelRepository<>(store, prefix, (id, data) -> new TestModel(id));
+        repo.deleteWhere(
+            new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+                .whereEquals("type", "no-match")
+                .build()
+        );
+
+        assertTrue(store.exists(path),
+            "Flat-map path with no matches must not delete unrelated records");
+    }
+
+    // =========================================================================
+    // deleteWhere(Query) / deleteWhereInSubquery / deleteWhereExists — exception paths
+    // =========================================================================
+
+    @Test
+    void deleteWhereQuerySqlPathWrapsExceptionAsStorageException() {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "events",
+            Map.of("id", "VARCHAR(36)", "type", "VARCHAR(50)"));
+
+        final ThrowingJdbcStore store = new ThrowingJdbcStore(new RuntimeException("db error"));
+        final Query q = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .whereEquals("type", "click")
+            .build();
+
+        assertThrows(StorageException.class,
+            () -> sqlRepo(store, prefix).deleteWhere(q),
+            "deleteWhere(Query) must wrap store exceptions as StorageException");
+    }
+
+    @Test
+    void deleteWhereInSubquerySqlPathWrapsExceptionAsStorageException() {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "users",
+            Map.of("id", "VARCHAR(36)", "name", "VARCHAR(255)"));
+
+        final ThrowingJdbcStore store = new ThrowingJdbcStore(new RuntimeException("db error"));
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("banned")
+            .select("id")
+            .build();
+
+        assertThrows(StorageException.class,
+            () -> sqlRepo(store, prefix).deleteWhereInSubquery("id", subquery),
+            "deleteWhereInSubquery must wrap store exceptions as StorageException");
+    }
+
+    @Test
+    void deleteWhereExistsSqlPathWrapsExceptionAsStorageException() {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "orders",
+            Map.of("id", "VARCHAR(36)", "status", "VARCHAR(20)"));
+
+        final ThrowingJdbcStore store = new ThrowingJdbcStore(new RuntimeException("db error"));
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("cancellations")
+            .select("order_id")
+            .build();
+
+        assertThrows(StorageException.class,
+            () -> sqlRepo(store, prefix).deleteWhereExists(subquery),
+            "deleteWhereExists must wrap store exceptions as StorageException");
     }
 }
