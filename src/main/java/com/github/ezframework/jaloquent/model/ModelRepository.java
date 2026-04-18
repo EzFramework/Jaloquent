@@ -30,6 +30,12 @@ import org.slf4j.Logger;
  * rendered to a parameterized SQL string via the configured dialect, then
  * executed directly — no manual WHERE-clause construction required.
  *
+ * <p>{@link #deleteWhere(Query)} uses {@link SqlDialect#renderDelete(Query)} to
+ * produce a correctly-quoted, parameterized DELETE statement for all dialects.
+ * {@link #deleteWhereInSubquery(String, Query)} and
+ * {@link #deleteWhereExists(Query)} expose the subquery-based DELETE forms
+ * added in JavaQueryBuilder 1.0.4; both require a SQL-capable store.
+ *
  * <p>When no SQL table is registered but the store implements
  * {@link QueryableStorage}, {@link #query(Query)} falls back to the
  * store's in-memory filter and loads results individually. When neither
@@ -419,6 +425,157 @@ public class ModelRepository<T extends BaseModel> {
                 log.error("Failed to deleteWhere {}={}: {}", column, value, e.getMessage(), e);
             }
             throw new StorageException("Failed to deleteWhere: " + column + "=" + value, e);
+        }
+    }
+
+    /**
+     * Delete all records whose columns match the conditions carried by the given {@link Query}.
+     *
+     * <p>On the SQL path (when a {@link TableRegistry} entry exists and the store
+     * implements {@link JdbcStore}) a single parameterised DELETE statement is issued
+     * via {@link SqlDialect#renderDelete(Query)}.
+     *
+     * <p>On the flat-map path, records matching the query are loaded via
+     * {@link #query(Query)} (requires the store to implement
+     * {@link QueryableStorage}) and then deleted individually.
+     *
+     * <p>If the query carries no conditions this method deletes all records in the
+     * table (SQL path) or all records returned by the store's query (flat-map path).
+     *
+     * @param q query whose WHERE conditions select the records to delete
+     * @throws StorageException on storage failure
+     */
+    public void deleteWhere(Query q) throws StorageException {
+        try {
+            final TableMeta meta = TableRegistry.get(prefix);
+            if (meta != null && store instanceof JdbcStore) {
+                final JdbcStore jdbc = (JdbcStore) store;
+                q.setTable(meta.tableName());
+                final SqlResult deleteResult = dialect.renderDelete(q);
+                jdbc.executeUpdate(deleteResult.getSql(), deleteResult.getParameters());
+                final Counter c = deleteCounter();
+                if (c != null) {
+                    c.increment();
+                }
+                final Logger log = logger();
+                if (log != null) {
+                    log.info("Query-deleted from SQL table {}", meta.tableName());
+                }
+                return;
+            }
+            final List<T> matching = query(q);
+            for (final T m : matching) {
+                store.delete(storagePath(m.getId()));
+            }
+            final Counter c = deleteCounter();
+            if (c != null) {
+                c.increment();
+            }
+        }
+        catch (Exception e) {
+            final Logger log = logger();
+            if (log != null) {
+                log.error("Failed to deleteWhere(Query): {}", e.getMessage(), e);
+            }
+            throw new StorageException("Failed to deleteWhere(Query)", e);
+        }
+    }
+
+    /**
+     * Delete all records where the given column's value is contained in the result
+     * set of {@code subquery}.
+     *
+     * <p>This method requires a SQL-capable store (a registered {@link TableRegistry}
+     * entry and a {@link JdbcStore} implementation). A non-SQL store throws
+     * {@link UnsupportedOperationException} because subquery evaluation requires a
+     * database engine.
+     *
+     * <p>Example: delete all users whose id appears in a subquery that selects
+     * banned user ids from another table.
+     *
+     * @param column   the column to test with {@code IN}
+     * @param subquery pre-built query whose single-column result set provides the values
+     * @throws StorageException              on storage failure
+     * @throws UnsupportedOperationException when no SQL store is configured
+     */
+    public void deleteWhereInSubquery(String column, Query subquery) throws StorageException {
+        try {
+            final TableMeta meta = TableRegistry.get(prefix);
+            if (meta != null && store instanceof JdbcStore) {
+                final JdbcStore jdbc = (JdbcStore) store;
+                final SqlResult result = QueryBuilder.deleteFrom(meta.tableName())
+                    .whereInSubquery(column, subquery)
+                    .build(dialect);
+                jdbc.executeUpdate(result.getSql(), result.getParameters());
+                final Counter c = deleteCounter();
+                if (c != null) {
+                    c.increment();
+                }
+                final Logger log = logger();
+                if (log != null) {
+                    log.info("Subquery-IN deleted from SQL table {}", meta.tableName());
+                }
+                return;
+            }
+            throw new UnsupportedOperationException(
+                "deleteWhereInSubquery requires a SQL-capable store");
+        }
+        catch (UnsupportedOperationException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            final Logger log = logger();
+            if (log != null) {
+                log.error("Failed to deleteWhereInSubquery: {}", e.getMessage(), e);
+            }
+            throw new StorageException("Failed to deleteWhereInSubquery", e);
+        }
+    }
+
+    /**
+     * Delete all records for which the given {@code subquery} returns at least one row
+     * ({@code WHERE EXISTS (SELECT ...)}).
+     *
+     * <p>This method requires a SQL-capable store (a registered {@link TableRegistry}
+     * entry and a {@link JdbcStore} implementation). A non-SQL store throws
+     * {@link UnsupportedOperationException} because subquery evaluation requires a
+     * database engine.
+     *
+     * @param subquery pre-built query used as the EXISTS predicate
+     * @throws StorageException              on storage failure
+     * @throws UnsupportedOperationException when no SQL store is configured
+     */
+    public void deleteWhereExists(Query subquery) throws StorageException {
+        try {
+            final TableMeta meta = TableRegistry.get(prefix);
+            if (meta != null && store instanceof JdbcStore) {
+                final JdbcStore jdbc = (JdbcStore) store;
+                final SqlResult result = QueryBuilder.deleteFrom(meta.tableName())
+                    .whereExistsSubquery(subquery)
+                    .build(dialect);
+                jdbc.executeUpdate(result.getSql(), result.getParameters());
+                final Counter c = deleteCounter();
+                if (c != null) {
+                    c.increment();
+                }
+                final Logger log = logger();
+                if (log != null) {
+                    log.info("Subquery-EXISTS deleted from SQL table {}", meta.tableName());
+                }
+                return;
+            }
+            throw new UnsupportedOperationException(
+                "deleteWhereExists requires a SQL-capable store");
+        }
+        catch (UnsupportedOperationException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            final Logger log = logger();
+            if (log != null) {
+                log.error("Failed to deleteWhereExists: {}", e.getMessage(), e);
+            }
+            throw new StorageException("Failed to deleteWhereExists", e);
         }
     }
 

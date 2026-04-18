@@ -468,6 +468,90 @@ public class DialectMatrixFeatureTest {
             "Filter value must be a bind parameter");
     }
 
+    /**
+     * deleteWhere(Query) must issue exactly one DELETE statement for all dialects
+     * and never embed the WHERE value in the SQL string.
+     *
+     * @param dialect the SQL dialect under test
+     * @throws Exception propagated from JDBC store
+     */
+    @ParameterizedTest
+    @MethodSource("allDialects")
+    void deleteWhereQueryIssuesSingleDeleteAllDialects(SqlDialect dialect) throws Exception {
+        final String prefix = uniquePrefix(dialect);
+        TableRegistry.register(prefix, "events",
+            cols("id", "VARCHAR(36)", "type", "VARCHAR(50)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        repo(store, prefix, dialect).deleteWhere(
+            new QueryBuilder().whereEquals("type", "CLICK").build()
+        );
+
+        assertEquals(1, store.updateSqls.size(),
+            "deleteWhere(Query) must issue exactly one statement");
+        final String sql = store.updateSqls.get(0).toUpperCase();
+        assertTrue(sql.startsWith("DELETE FROM"),
+            "Expected DELETE FROM but got: " + sql);
+        assertTrue(sql.contains("WHERE"),
+            "Expected WHERE clause in: " + sql);
+    }
+
+    /**
+     * deleteWhere(Query) must pass the WHERE value as a bind parameter, never in the SQL
+     * string, for all dialects.
+     *
+     * @param dialect the SQL dialect under test
+     * @throws Exception propagated from JDBC store
+     */
+    @ParameterizedTest
+    @MethodSource("allDialects")
+    void deleteWhereQueryPassesValueAsBindParamAllDialects(SqlDialect dialect) throws Exception {
+        final String prefix = uniquePrefix(dialect);
+        TableRegistry.register(prefix, "events",
+            cols("id", "VARCHAR(36)", "type", "VARCHAR(50)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        repo(store, prefix, dialect).deleteWhere(
+            new QueryBuilder().whereEquals("type", "CRITICAL-VALUE").build()
+        );
+
+        final String sql = store.updateSqls.get(0);
+        assertFalse(sql.contains("CRITICAL-VALUE"),
+            "WHERE value must not appear in SQL string for dialect " + dialect);
+        assertTrue(store.updateParams.get(0).contains("CRITICAL-VALUE"),
+            "WHERE value must be a bind parameter for dialect " + dialect);
+    }
+
+    /**
+     * deleteWhere(Query) must apply dialect-specific identifier quoting to the
+     * registered table name for MYSQL and SQLITE dialects.
+     *
+     * @param dialect  the SQL dialect under test
+     * @param open     expected opening quote character
+     * @param close    expected closing quote character
+     * @throws Exception propagated from JDBC store
+     */
+    @ParameterizedTest
+    @MethodSource("selectDialects")
+    void deleteWhereQueryQuotesTablePerDialect(SqlDialect dialect, String open, String close)
+            throws Exception {
+        final String prefix = uniquePrefix(dialect);
+        TableRegistry.register(prefix, "audit_log",
+            cols("id", "VARCHAR(36)", "action", "VARCHAR(100)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        repo(store, prefix, dialect).deleteWhere(
+            new QueryBuilder().whereEquals("action", "LOGIN").build()
+        );
+
+        final String sql = store.updateSqls.get(0);
+        if (!open.isEmpty()) {
+            final String quotedTable = open + "audit_log" + close;
+            assertTrue(sql.contains(quotedTable),
+                "Expected quoted table " + quotedTable + " in SQL: " + sql);
+        }
+    }
+
     // =========================================================================
     // save() — INSERT params matrix
     // =========================================================================
