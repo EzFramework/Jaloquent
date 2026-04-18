@@ -519,4 +519,178 @@ public class ModelRepositoryJdbcFeatureTest {
         assertTrue(params.contains("PENDING"), "status value must be a bind parameter");
         assertEquals(2, params.size(), "Expected exactly 2 bind parameters");
     }
+
+    // =========================================================================
+    // deleteWhereInSubquery() — SQL path
+    // =========================================================================
+
+    @Test
+    void deleteWhereInSubquerySqlPathIssuesSingleDeleteStatement() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "users",
+            Map.of("id", "VARCHAR(36)", "name", "VARCHAR(255)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("banned_ids")
+            .select("user_id")
+            .whereEquals("reason", "spam")
+            .build();
+        sqlRepo(store, prefix).deleteWhereInSubquery("id", subquery);
+
+        assertEquals(1, store.updateSqls.size(),
+            "deleteWhereInSubquery must issue exactly one statement");
+        assertFalse(store.dataStoreDeleteCalled,
+            "flat-map delete must not be called on SQL path");
+    }
+
+    @Test
+    void deleteWhereInSubquerySqlContainsDeleteFromAndWhereIn() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "users",
+            Map.of("id", "VARCHAR(36)", "name", "VARCHAR(255)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("banned_ids")
+            .select("user_id")
+            .build();
+        sqlRepo(store, prefix).deleteWhereInSubquery("id", subquery);
+
+        final String sql = store.updateSqls.get(0).toUpperCase();
+        assertTrue(sql.startsWith("DELETE FROM"),
+            "Expected DELETE FROM but got: " + sql);
+        assertTrue(sql.contains("WHERE"),
+            "Expected WHERE in: " + sql);
+        assertTrue(sql.contains(" IN "),
+            "Expected IN subquery but got: " + sql);
+        assertTrue(sql.contains("SELECT"),
+            "Expected SELECT in subquery but got: " + sql);
+    }
+
+    @Test
+    void deleteWhereInSubqueryPassesSubqueryParamAsBindParam() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "users",
+            Map.of("id", "VARCHAR(36)", "name", "VARCHAR(255)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("reports")
+            .select("offender_id")
+            .whereEquals("severity", "HIGH")
+            .build();
+        sqlRepo(store, prefix).deleteWhereInSubquery("id", subquery);
+
+        final String sql          = store.updateSqls.get(0);
+        final List<Object> params = store.updateParams.get(0);
+        assertFalse(sql.contains("HIGH"),
+            "Subquery param must not appear in SQL string");
+        assertTrue(params.contains("HIGH"),
+            "Subquery param must be a bind parameter");
+        assertEquals(1, params.size(),
+            "Expected exactly 1 bind parameter");
+    }
+
+    @Test
+    void deleteWhereInSubqueryThrowsOnNonSqlStore() {
+        final String prefix = uniquePrefix();
+        // No TableRegistry.register — no SQL table, plain DataStore store
+        final ModelRepository<TestModel> repo = new ModelRepository<>(
+            new InMemoryStore(), prefix, (id, data) -> new TestModel(id));
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("other")
+            .select("id")
+            .build();
+
+        assertThrows(UnsupportedOperationException.class,
+            () -> repo.deleteWhereInSubquery("id", subquery),
+            "deleteWhereInSubquery must throw on a non-SQL store");
+    }
+
+    // =========================================================================
+    // deleteWhereExists() — SQL path
+    // =========================================================================
+
+    @Test
+    void deleteWhereExistsSqlPathIssuesSingleDeleteStatement() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "orders",
+            Map.of("id", "VARCHAR(36)", "status", "VARCHAR(20)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("cancellations")
+            .select("order_id")
+            .whereEquals("confirmed", true)
+            .build();
+        sqlRepo(store, prefix).deleteWhereExists(subquery);
+
+        assertEquals(1, store.updateSqls.size(),
+            "deleteWhereExists must issue exactly one statement");
+        assertFalse(store.dataStoreDeleteCalled,
+            "flat-map delete must not be called on SQL path");
+    }
+
+    @Test
+    void deleteWhereExistsSqlContainsDeleteFromAndExists() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "orders",
+            Map.of("id", "VARCHAR(36)", "status", "VARCHAR(20)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("cancellations")
+            .select("order_id")
+            .build();
+        sqlRepo(store, prefix).deleteWhereExists(subquery);
+
+        final String sql = store.updateSqls.get(0).toUpperCase();
+        assertTrue(sql.startsWith("DELETE FROM"),
+            "Expected DELETE FROM but got: " + sql);
+        assertTrue(sql.contains("EXISTS"),
+            "Expected EXISTS keyword but got: " + sql);
+        assertTrue(sql.contains("SELECT"),
+            "Expected SELECT in subquery but got: " + sql);
+    }
+
+    @Test
+    void deleteWhereExistsPassesSubqueryParamAsBindParam() throws Exception {
+        final String prefix = uniquePrefix();
+        TableRegistry.register(prefix, "orders",
+            Map.of("id", "VARCHAR(36)", "status", "VARCHAR(20)"));
+
+        final RecordingJdbcStore store = new RecordingJdbcStore();
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("fraud_flags")
+            .select("account_id")
+            .whereEquals("flagged_by", "system")
+            .build();
+        sqlRepo(store, prefix).deleteWhereExists(subquery);
+
+        final String sql          = store.updateSqls.get(0);
+        final List<Object> params = store.updateParams.get(0);
+        assertFalse(sql.contains("system"),
+            "Subquery param must not appear in SQL string");
+        assertTrue(params.contains("system"),
+            "Subquery param must be a bind parameter");
+        assertEquals(1, params.size(),
+            "Expected exactly 1 bind parameter");
+    }
+
+    @Test
+    void deleteWhereExistsThrowsOnNonSqlStore() {
+        final String prefix = uniquePrefix();
+        // No TableRegistry entry — no SQL table, plain DataStore store
+        final ModelRepository<TestModel> repo = new ModelRepository<>(
+            new InMemoryStore(), prefix, (id, data) -> new TestModel(id));
+        final Query subquery = new com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder()
+            .from("other")
+            .select("id")
+            .build();
+
+        assertThrows(UnsupportedOperationException.class,
+            () -> repo.deleteWhereExists(subquery),
+            "deleteWhereExists must throw on a non-SQL store");
+    }
 }
