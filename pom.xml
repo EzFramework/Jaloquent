@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.EzFramework</groupId>
-    <artifactId>Jaloquent</artifactId>
-    <version>1.0.3</version>
+    <artifactId>jaloquent</artifactId>
+    <version>1.0.4</version>
     <packaging>jar</packaging>
     <name>Jaloquent</name>
     <description>

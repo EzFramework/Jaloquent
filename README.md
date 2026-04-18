@@ -1,7 +1,7 @@
 # Jaloquent
 
 [![](https://jitpack.io/v/EzFramework/Jaloquent.svg)](https://jitpack.io/#EzFramework/Jaloquent)
-[![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.0.0-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
+[![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.0.4-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
 ![Codecov](https://img.shields.io/codecov/c/github/EzFramework/Jaker)
 
 
@@ -33,8 +33,8 @@ Add the JitPack repository and the dependency to your `pom.xml`:
 
 <dependency>
     <groupId>com.github.EzFramework</groupId>
-    <artifactId>Jaloquent</artifactId>
-    <version>1.0.0</version>
+    <artifactId>jaloquent</artifactId>
+    <version>1.0.4</version>
 </dependency>
 ```
 
@@ -46,7 +46,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.EzFramework:Jaloquent:1.0.0'
+    implementation 'com.github.EzFramework:jaloquent:1.0.4'
 }
 ```
 
