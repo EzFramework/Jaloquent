@@ -9,7 +9,7 @@ permalink: /
 # Jaloquent
 
 [![JitPack](https://jitpack.io/v/EzFramework/Jaloquent.svg)](https://jitpack.io/#EzFramework/Jaloquent)
-[![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.0.4-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
+[![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.0.5-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
 [![Coverage](https://img.shields.io/codecov/c/github/EzFramework/Jaker)](https://codecov.io/github/EzFramework/Jaker)
 
 **Jaloquent** is an Eloquent-style active-record ORM layer for Java, built on the
@@ -52,7 +52,7 @@ inspired by Laravel's Eloquent ORM.
 <dependency>
   <groupId>com.github.EzFramework</groupId>
   <artifactId>jaloquent</artifactId>
-  <version>1.0.4</version>
+  <version>1.0.5</version>
 </dependency>
 ```
 
