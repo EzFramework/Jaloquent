@@ -24,6 +24,7 @@ Every subclass logs itself at `ERROR` level via SLF4J on construction.
 Exception
   └── JaloquentException
         ├── StorageException
+        │     └── TransactionException
         ├── ValidationException
         └── ModelNotFoundException
 ```
@@ -88,6 +89,28 @@ try {
 catch (ValidationException e) {
     // return HTTP 422 to the caller — the data is invalid
     response.sendError(422, e.getMessage());
+}
+```
+
+---
+
+## TransactionException
+
+A subclass of `StorageException` raised when a transaction lifecycle operation
+fails — `beginTransaction()`, `commitTransaction()`, or `rollbackTransaction()`.
+
+```java
+try (Transaction tx = repo.transaction()) {
+    repo.save(model);
+    tx.commit();
+}
+catch (TransactionException e) {
+    // transaction-specific failure — e.g. connection dropped mid-commit
+    log.error("Transaction failed: {}", e.getMessage(), e.getCause());
+}
+catch (StorageException e) {
+    // general storage failure, including store not supporting transactions
+    log.error("Storage failed: {}", e.getMessage(), e.getCause());
 }
 ```
 

@@ -9,7 +9,7 @@ permalink: /
 # Jaloquent
 
 [![JitPack](https://jitpack.io/v/EzFramework/Jaloquent.svg)](https://jitpack.io/#EzFramework/Jaloquent)
-[![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.0.5-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
+[![GitHub Packages](https://img.shields.io/badge/GitHub_Packages-1.1.0-blue?logo=github)](https://github.com/EzFramework/Jaloquent/packages)
 [![Coverage](https://img.shields.io/codecov/c/github/EzFramework/Jaker)](https://codecov.io/github/EzFramework/Jaker)
 
 **Jaloquent** is an Eloquent-style active-record ORM layer for Java, built on the
@@ -33,6 +33,8 @@ inspired by Laravel's Eloquent ORM.
 - **Four relation types** — `HasOne`, `HasMany`, `BelongsTo`, `BelongsToMany` with lazy loading,
   `sync`, `attach`, `detach`, and `detachAll`
 - **Laravel-style factories** — `Factory<T>` + `HasFactory` marker for fixture generation backed by Jaker
+- **Database transactions** — atomic multi-step operations via `TransactionalJdbcStore`;
+  try-with-resources handle or lambda callback with automatic commit/rollback
 - **SLF4J + Micrometer** — opt-in observability with zero mandatory dependencies
 
 ---
@@ -52,7 +54,7 @@ inspired by Laravel's Eloquent ORM.
 <dependency>
   <groupId>com.github.EzFramework</groupId>
   <artifactId>jaloquent</artifactId>
-  <version>1.0.5</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 
@@ -110,5 +112,6 @@ Optional<Player> found = repo.find(p.getId());
 | [Relations](relations) | HasOne, HasMany, BelongsTo, BelongsToMany |
 | [Factories](factories) | Generating test fixtures with `Factory<T>` |
 | [Configuration](configuration) | Logging and metrics via `JaloquentConfig` |
+| [Transactions](transactions) | Atomic multi-step operations, commit/rollback |
 | [Exceptions](exceptions) | Error hierarchy and handling patterns |
 | [API Reference](api-reference) | Full public-method tables for every class |
