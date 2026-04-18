@@ -75,7 +75,7 @@ Extends `JaloquentException`. Same three constructors. Thrown when a required lo
 
 ### `Model` (abstract, extends `BaseModel`)
 
-**Attribute access**
+#### Attribute access
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -87,7 +87,7 @@ Extends `JaloquentException`. Same three constructors. Thrown when a required lo
 | `toMap()` | `Map<String, Object>` | Mutable copy of all attributes |
 | `fromMap(Map<String,Object>)` | `void` | Populate attributes; `"id"` key updates `id` field |
 
-**Mass-assignment**
+#### Mass-assignment
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -98,7 +98,7 @@ Extends `JaloquentException`. Same three constructors. Thrown when a required lo
 | `fill(Map<String,Object>)` | `void` | Permissive mass-assign; respects guarded; `id` always blocked |
 | `update(Map<String,Object>)` | `void` | Strict mass-assign; only explicitly-declared fillable keys |
 
-**Persistence shortcuts**
+#### Persistence shortcuts
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -135,14 +135,14 @@ Extends `JaloquentException`. Same three constructors. Thrown when a required lo
 
 ### `ModelRepository<T extends BaseModel>`
 
-**Constructors**
+#### Constructors
 
 | Constructor | Description |
 |-------------|-------------|
 | `ModelRepository(store, prefix, factory)` | Uses `SqlDialect.STANDARD` |
 | `ModelRepository(store, prefix, factory, dialect)` | Explicit SQL dialect |
 
-**Operations**
+#### Operations
 
 | Method | Returns | Description |
 |--------|---------|-------------|

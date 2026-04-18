@@ -21,7 +21,7 @@ description: "Setting up ModelRepository, registering SQL tables, and performing
 It inspects the store it receives at construction time and routes every call to
 either the **SQL path** (JDBC, via `JdbcStore`) or the **flat-map path** (`DataStore`).
 
-```
+```text
 ModelRepository<T>
   ├── JdbcStore path  → used when store implements JdbcStore AND a TableRegistry entry exists
   └── DataStore path  → fallback for any store implementing only DataStore

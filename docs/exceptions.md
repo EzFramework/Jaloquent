@@ -20,7 +20,7 @@ description: "Exception hierarchy, typical catch patterns, and when each excepti
 All Jaloquent exceptions extend `JaloquentException`, which itself extends `Exception`.
 Every subclass logs itself at `ERROR` level via SLF4J on construction.
 
-```
+```text
 Exception
   └── JaloquentException
         ├── StorageException

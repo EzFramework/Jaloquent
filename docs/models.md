@@ -21,7 +21,7 @@ Every domain object in Jaloquent extends `Model`, which extends `BaseModel`.
 A model holds its state in an internal `HashMap<String, Object>` called _attributes_
 and delegates all persistence to a `ModelRepository`.
 
-```
+```text
 BaseModel  ←  id, getStoragePath(), toMap(), fromMap()
    └── Model  ←  attributes map, get/set, fill/update, relations, save/delete/find
          └── YourModel  ←  typed accessors, relation methods

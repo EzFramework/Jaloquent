@@ -25,7 +25,7 @@ Jaloquent ships a Laravel-style factory system built on [Jaker](https://github.c
 a Java fake-data library. Factories let you generate realistic model instances
 for tests and seeders with minimal boilerplate.
 
-```
+```text
 Factory<T>          ← abstract base — you implement definition()
   └── PlayerFactory ← your concrete factory
         ↓
