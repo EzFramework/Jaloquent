@@ -99,7 +99,7 @@ already been applied is a no-op.
 Every call to `run()` groups all migrations it applies into a single *batch*.
 `rollback()` always reverts the entire most-recent batch, in reverse list order.
 
-```
+```text
 run()           → applies m1, m2, m3 → batch 1
 run()           → no-op (all already applied)
 
