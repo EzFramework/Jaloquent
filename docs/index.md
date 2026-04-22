@@ -35,6 +35,8 @@ inspired by Laravel's Eloquent ORM.
 - **Laravel-style factories** — `Factory<T>` + `HasFactory` marker for fixture generation backed by Jaker
 - **Database transactions** — atomic multi-step operations via `TransactionalJdbcStore`;
   try-with-resources handle or lambda callback with automatic commit/rollback
+- **Schema migrations** — version-controlled DDL with `Migration`, `Schema`, and `MigrationRunner`;
+  batch-based `run()` / `rollback()` with automatic tracking table
 - **SLF4J + Micrometer** — opt-in observability with zero mandatory dependencies
 
 ---
@@ -109,9 +111,14 @@ Optional<Player> found = repo.find(p.getId());
 | [Models](models) | Defining models, attributes, mass-assignment |
 | [Repositories](repositories) | Setup, TableRegistry, CRUD, bulk operations |
 | [Queries](queries) | Query builder — filters, ordering, limits |
-| [Relations](relations) | HasOne, HasMany, BelongsTo, BelongsToMany |
+| [Relations](relations) | HasOne, HasMany, BelongsTo, BelongsToMany overview |
+| &nbsp;&nbsp;[HasOne](relations/has-one) | One-to-one (FK on related model) |
+| &nbsp;&nbsp;[HasMany](relations/has-many) | One-to-many (FK on related model) |
+| &nbsp;&nbsp;[BelongsTo](relations/belongs-to) | Inverse — FK on this model |
+| &nbsp;&nbsp;[BelongsToMany](relations/belongs-to-many) | Many-to-many via pivot table |
 | [Factories](factories) | Generating test fixtures with `Factory<T>` |
 | [Configuration](configuration) | Logging and metrics via `JaloquentConfig` |
 | [Transactions](transactions) | Atomic multi-step operations, commit/rollback |
+| [Migrations](migrations) | Schema versioning, column types, `run()` / `rollback()` |
 | [Exceptions](exceptions) | Error hierarchy and handling patterns |
 | [API Reference](api-reference) | Full public-method tables for every class |
