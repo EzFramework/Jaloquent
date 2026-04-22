@@ -10,8 +10,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -106,14 +109,27 @@ public class MigrationRunnerSqlFeatureTest {
         public void down(final Schema schema) { }
     }
 
+    /**
+     * Dialects exercised by every MigrationRunner SQL-level test.
+     *
+     * @return argument stream containing MYSQL and POSTGRESQL dialects
+     */
+    static Stream<Arguments> dialects() {
+        return Stream.of(
+            Arguments.of(SqlDialect.MYSQL),
+            Arguments.of(SqlDialect.POSTGRESQL)
+        );
+    }
+
     // =========================================================================
     // run() — ensureMigrationsTable CREATE TABLE DDL
     // =========================================================================
 
-    @Test
-    void run_firstUpdateIsMigrationsTableCreateDdl() throws Exception {
+    @ParameterizedTest
+    @MethodSource("dialects")
+    void run_firstUpdateIsMigrationsTableCreateDdl(SqlDialect dialect) throws Exception {
         final RecordingJdbcStore store = new RecordingJdbcStore();
-        new MigrationRunner(store, SqlDialect.MYSQL,
+        new MigrationRunner(store, dialect,
                 List.of(new NoOpMigration("m1"))).run();
 
         assertTrue(store.updateSqls.get(0).toUpperCase().contains("CREATE TABLE"),
@@ -128,10 +144,11 @@ public class MigrationRunnerSqlFeatureTest {
     // run() — getRanMigrations SELECT
     // =========================================================================
 
-    @Test
-    void run_firstQuerySelectsFromMigrationsTable() throws Exception {
+    @ParameterizedTest
+    @MethodSource("dialects")
+    void run_firstQuerySelectsFromMigrationsTable(SqlDialect dialect) throws Exception {
         final RecordingJdbcStore store = new RecordingJdbcStore();
-        new MigrationRunner(store, SqlDialect.MYSQL,
+        new MigrationRunner(store, dialect,
                 List.of(new NoOpMigration("m1"))).run();
 
         assertTrue(store.querySqls.get(0).toUpperCase().contains("SELECT"),
@@ -142,10 +159,11 @@ public class MigrationRunnerSqlFeatureTest {
                 "SELECT must carry no bind parameters");
     }
 
-    @Test
-    void run_idAndBatchColumnsSelectedFromMigrationsTable() throws Exception {
+    @ParameterizedTest
+    @MethodSource("dialects")
+    void run_idAndBatchColumnsSelectedFromMigrationsTable(SqlDialect dialect) throws Exception {
         final RecordingJdbcStore store = new RecordingJdbcStore();
-        new MigrationRunner(store, SqlDialect.MYSQL,
+        new MigrationRunner(store, dialect,
                 List.of(new NoOpMigration("m1"))).run();
 
         final String selectSql = store.querySqls.get(0);
@@ -157,10 +175,11 @@ public class MigrationRunnerSqlFeatureTest {
     // run() — recordMigration INSERT
     // =========================================================================
 
-    @Test
-    void run_secondUpdateIsInsertTrackingRecord() throws Exception {
+    @ParameterizedTest
+    @MethodSource("dialects")
+    void run_secondUpdateIsInsertTrackingRecord(SqlDialect dialect) throws Exception {
         final RecordingJdbcStore store = new RecordingJdbcStore();
-        new MigrationRunner(store, SqlDialect.MYSQL,
+        new MigrationRunner(store, dialect,
                 List.of(new NoOpMigration("m1"))).run();
 
         // updateSqls[0] = CREATE TABLE jaloquent_migrations
@@ -171,11 +190,12 @@ public class MigrationRunnerSqlFeatureTest {
                 "INSERT must target jaloquent_migrations");
     }
 
-    @Test
-    void run_migrationIdIsBindParamNotInterpolatedIntoInsertSql() throws Exception {
+    @ParameterizedTest
+    @MethodSource("dialects")
+    void run_migrationIdIsBindParamNotInterpolatedIntoInsertSql(SqlDialect dialect) throws Exception {
         final RecordingJdbcStore store = new RecordingJdbcStore();
         final String migId = "2026_05_01_marker_id_must_not_appear_in_sql";
-        new MigrationRunner(store, SqlDialect.MYSQL,
+        new MigrationRunner(store, dialect,
                 List.of(new NoOpMigration(migId))).run();
 
         assertFalse(store.updateSqls.get(1).contains(migId),
@@ -184,10 +204,11 @@ public class MigrationRunnerSqlFeatureTest {
                 "Migration ID must appear as a bind parameter");
     }
 
-    @Test
-    void run_batchNumberOneForFirstRun() throws Exception {
+    @ParameterizedTest
+    @MethodSource("dialects")
+    void run_batchNumberOneForFirstRun(SqlDialect dialect) throws Exception {
         final RecordingJdbcStore store = new RecordingJdbcStore();
-        new MigrationRunner(store, SqlDialect.MYSQL,
+        new MigrationRunner(store, dialect,
                 List.of(new NoOpMigration("m1"))).run();
 
         assertTrue(
@@ -200,8 +221,9 @@ public class MigrationRunnerSqlFeatureTest {
     // rollback() — removeMigrationRecord DELETE
     // =========================================================================
 
-    @Test
-    void rollback_secondUpdateIsDeleteFromMigrationsTable() throws Exception {
+    @ParameterizedTest
+    @MethodSource("dialects")
+    void rollback_secondUpdateIsDeleteFromMigrationsTable(SqlDialect dialect) throws Exception {
         final RecordingJdbcStore store = new RecordingJdbcStore();
         final String migId = "2026_05_01_rollback_marker";
         final Map<String, Object> row = new HashMap<>();
@@ -209,7 +231,7 @@ public class MigrationRunnerSqlFeatureTest {
         row.put("batch", 1);
         store.nextQueryRows = List.of(row);
 
-        new MigrationRunner(store, SqlDialect.MYSQL,
+        new MigrationRunner(store, dialect,
                 List.of(new NoOpMigration(migId))).rollback();
 
         // updateSqls[0] = CREATE TABLE jaloquent_migrations
@@ -220,8 +242,9 @@ public class MigrationRunnerSqlFeatureTest {
                 "DELETE must target jaloquent_migrations");
     }
 
-    @Test
-    void rollback_migrationIdIsBindParamNotInterpolatedIntoDeleteSql() throws Exception {
+    @ParameterizedTest
+    @MethodSource("dialects")
+    void rollback_migrationIdIsBindParamNotInterpolatedIntoDeleteSql(SqlDialect dialect) throws Exception {
         final RecordingJdbcStore store = new RecordingJdbcStore();
         final String migId = "2026_05_01_marker_must_not_appear_in_delete_sql";
         final Map<String, Object> row = new HashMap<>();
@@ -229,7 +252,7 @@ public class MigrationRunnerSqlFeatureTest {
         row.put("batch", 1);
         store.nextQueryRows = List.of(row);
 
-        new MigrationRunner(store, SqlDialect.MYSQL,
+        new MigrationRunner(store, dialect,
                 List.of(new NoOpMigration(migId))).rollback();
 
         assertFalse(store.updateSqls.get(1).contains(migId),
