@@ -25,7 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Parameterized matrix tests that exercise every {@link ModelRepository} SQL operation
- * against both {@link SqlDialect#MYSQL} and {@link SqlDialect#SQLITE} dialects.
+ * against the {@link SqlDialect#MYSQL}, {@link SqlDialect#SQLITE}, and
+ * {@link SqlDialect#POSTGRESQL} dialects.
  *
  * <p>Each test verifies two invariants:
  * <ol>
@@ -113,15 +114,16 @@ public class DialectMatrixFeatureTest {
      * Each row: dialect, opening quote char, closing quote char.
      *
      * <p>STANDARD produces unquoted identifiers; MYSQL uses back-ticks;
-     * SQLITE uses double-quotes.
+     * SQLITE and POSTGRESQL use double-quotes.
      *
      * @return argument stream for parameterized tests
      */
     static Stream<Arguments> selectDialects() {
         return Stream.of(
-            Arguments.of(SqlDialect.STANDARD, "",  ""),
-            Arguments.of(SqlDialect.MYSQL,    "`", "`"),
-            Arguments.of(SqlDialect.SQLITE,   "\"", "\"")
+            Arguments.of(SqlDialect.STANDARD,   "",    ""),
+            Arguments.of(SqlDialect.MYSQL,      "`",   "`"),
+            Arguments.of(SqlDialect.SQLITE,     "\"",  "\""),
+            Arguments.of(SqlDialect.POSTGRESQL, "\"",  "\"")
         );
     }
 
@@ -130,7 +132,8 @@ public class DialectMatrixFeatureTest {
         return Stream.of(
             Arguments.of(SqlDialect.STANDARD),
             Arguments.of(SqlDialect.MYSQL),
-            Arguments.of(SqlDialect.SQLITE)
+            Arguments.of(SqlDialect.SQLITE),
+            Arguments.of(SqlDialect.POSTGRESQL)
         );
     }
 
