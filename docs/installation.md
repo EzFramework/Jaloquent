@@ -44,7 +44,7 @@ description: "Add Jaloquent to your Java project via JitPack or GitHub Packages"
 <dependency>
   <groupId>com.github.EzFramework</groupId>
   <artifactId>jaloquent</artifactId>
-  <version>1.0.5</version>
+  <version>1.2.1</version>
 </dependency>
 ```
 
@@ -74,7 +74,7 @@ repositories {
 
 ```kotlin
 dependencies {
-    implementation("com.github.EzFramework:jaloquent:1.0.5")
+    implementation("com.github.EzFramework:jaloquent:1.2.1")
 }
 ```
 
