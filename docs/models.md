@@ -19,7 +19,7 @@ description: "Defining model classes, reading and writing attributes, and mass-a
 
 Every domain object in Jaloquent extends `Model`, which extends `BaseModel`.
 A model holds its state in an internal `HashMap<String, Object>` called _attributes_
-and delegates all persistence to a `ModelRepository`.
+and delegates all persistence to a [`ModelRepository`](repositories).
 
 ```text
 BaseModel  ←  id, getStoragePath(), toMap(), fromMap()
@@ -177,11 +177,11 @@ setGuarded("isAdmin", "role");
 
 ## Persistence shortcuts
 
-These convenience methods delegate directly to the given repository.
+These convenience methods delegate directly to the given repository. See [Repositories](repositories) for the full persistence API including bulk operations, querying, and transactions.
 
 ### `save(repo)`
 
-Upserts the model and returns `this` for chaining:
+Upserts the model and returns `this` for chaining (delegates to [`ModelRepository.save()`](repositories#save-model----upsert)):
 
 ```java
 player.setName("Alice").save(repo); // chained
@@ -218,4 +218,4 @@ Player player = Model.find(repo, "some-uuid"); // null if not found
 | `fromMap(Map)` | Abstract — populate from flat map |
 
 The storage path is used by flat-map `DataStore` implementations to locate records.
-When a `TableRegistry` entry exists for the prefix, the SQL path is used instead.
+When a [`TableRegistry`](repositories#tableregistry) entry exists for the prefix, the SQL path is used instead.

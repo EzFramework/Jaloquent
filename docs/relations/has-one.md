@@ -18,6 +18,9 @@ description: "One-to-one relationship where the foreign key lives on the related
 
 ## Overview
 
+{: .note }
+> Part of the [Relations](../relations) family: `HasOne`, [`HasMany`](has-many), [`BelongsTo`](belongs-to), [`BelongsToMany`](belongs-to-many).
+
 `HasOne<T>` represents a one-to-one relationship where the foreign key lives on
 the **related** model. It is the *owning* side: this model's primary key is stored
 as a column on the related table.

@@ -171,7 +171,7 @@ String sql    = result.getSql();
 List<?> params = result.getParameters();
 ```
 
-Then execute via your `JdbcStore`:
+Then execute via your [`JdbcStore`](repositories#jdbcstore):
 
 ```java
 List<Map<String, Object>> rows = jdbcStore.query(sql, params);
@@ -190,5 +190,13 @@ The same query builder produces correct SQL across all supported dialects:
 | PostgreSQL | `POSTGRESQL` | Uses `ON CONFLICT DO UPDATE` for upserts |
 | H2 | `H2` | Used in tests with an in-memory database |
 
-Pass the dialect to the `ModelRepository` constructor; query builder calls inside
+Pass the dialect to the [`ModelRepository`](repositories#custom-sql-dialect) constructor; query builder calls inside
 `repo.query()` and `repo.deleteWhere()` automatically use the configured dialect.
+
+---
+
+## See also
+
+- [Repositories](repositories) — how to execute queries via `repo.query()`, `repo.deleteWhere()`, and `repo.deleteAll()`
+- [Models](models) — `Model.queryBuilder()` and typed accessors
+- [API Reference → ModelRepository](api-reference#modelrepositoryt-extends-basemodel) — full method table

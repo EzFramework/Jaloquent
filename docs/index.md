@@ -84,11 +84,23 @@ TableRegistry.register("players", "player_data", Map.of(
 ));
 ```
 
-**4. Create a repository and persist:**
+**4. Connect to a database and create a repository:**
 
 ```java
+import com.github.ezframework.jaloquent.config.DatabaseSettings;
+import com.github.ezframework.jaloquent.config.JaloquentConfig;
+import com.github.ezframework.jaloquent.store.sql.JdbcStore;
+
+// One-liner setup — Jaloquent manages the connection
+JaloquentConfig.setDatabaseSettings(DatabaseSettings.builder()
+    .url("jdbc:mysql://localhost:3306/mydb")
+    .username("app")
+    .password("secret")
+    .build());
+JdbcStore store = JaloquentConfig.buildStore();   // DriverManager-backed, no pool
+
 ModelRepository<Player> repo = new ModelRepository<>(
-    myStore,    // implements DataStore (+ JdbcStore for SQL)
+    store,
     "players",
     (id, data) -> { Player p = new Player(id); p.fromMap(data); return p; }
 );
@@ -117,7 +129,7 @@ Optional<Player> found = repo.find(p.getId());
 | &nbsp;&nbsp;[BelongsTo](relations/belongs-to) | Inverse — FK on this model |
 | &nbsp;&nbsp;[BelongsToMany](relations/belongs-to-many) | Many-to-many via pivot table |
 | [Factories](factories) | Generating test fixtures with `Factory<T>` |
-| [Configuration](configuration) | Logging and metrics via `JaloquentConfig` |
+| [Configuration](configuration) | Database settings, opt-in logging and metrics via `JaloquentConfig` |
 | [Transactions](transactions) | Atomic multi-step operations, commit/rollback |
 | [Migrations](migrations) | Schema versioning, column types, `run()` / `rollback()` |
 | [Exceptions](exceptions) | Error hierarchy and handling patterns |

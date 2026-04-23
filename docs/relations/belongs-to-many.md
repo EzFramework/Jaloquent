@@ -18,6 +18,9 @@ description: "Many-to-many relationship via a pivot table — attach, detach, sy
 
 ## Overview
 
+{: .note }
+> Part of the [Relations](../relations) family: [`HasOne`](has-one), [`HasMany`](has-many), [`BelongsTo`](belongs-to), `BelongsToMany`.
+
 `BelongsToMany<T, P>` represents a many-to-many relationship mediated by a pivot
 table. Both the parent model's ID and the related model's ID are stored as foreign
 keys on the pivot row.
@@ -30,7 +33,7 @@ name             role_id  (FK)     ───► name
                  granted_by             type
 ```
 
-Jaloquent provides `PivotModel` as a ready-made pivot class. Use it whenever
+Jaloquent provides [`PivotModel`](../api-reference#pivotmodel-final-extends-model) as a ready-made pivot class. Use it whenever
 the pivot table acts as a pure join table. Supply your own `Model` subclass if
 you need to read extra pivot columns after attaching.
 

@@ -18,7 +18,10 @@ description: "Inverse side of a one-to-one or one-to-many relationship — FK li
 
 ## Overview
 
-`BelongsTo<T>` is the **inverse** side of a `HasOne` or `HasMany` relationship.
+{: .note }
+> Part of the [Relations](../relations) family: [`HasOne`](has-one), [`HasMany`](has-many), `BelongsTo`, [`BelongsToMany`](belongs-to-many).
+
+`BelongsTo<T>` is the **inverse** side of a [`HasOne`](has-one) or [`HasMany`](has-many) relationship.
 The foreign key lives on *this* model and references the primary key of the
 related (parent) model.
 
