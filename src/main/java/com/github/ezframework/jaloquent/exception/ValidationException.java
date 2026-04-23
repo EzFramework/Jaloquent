@@ -1,20 +1,31 @@
 package com.github.ezframework.jaloquent.exception;
 
-/**
- * Thrown when a model or input fails validation.
- */
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Thrown when a model or input fails validation.
+ */
 public class ValidationException extends JaloquentException {
     /** Logger for this exception class. */
     private static final Logger log = LoggerFactory.getLogger(ValidationException.class);
 
+    /**
+     * Creates a {@code ValidationException} with the given message.
+     *
+     * @param message the detail message
+     */
     public ValidationException(String message) {
         super(message);
         logError(message, null);
     }
 
+    /**
+     * Creates a {@code ValidationException} with the given message and cause.
+     *
+     * @param message the detail message
+     * @param cause   the underlying cause
+     */
     public ValidationException(String message, Throwable cause) {
         super(message, cause);
         logError(message, cause);

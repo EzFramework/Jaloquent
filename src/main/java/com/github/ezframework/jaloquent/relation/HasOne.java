@@ -60,7 +60,7 @@ public final class HasOne<T extends BaseModel> extends Relation<T> {
      * Execute the relationship and return the first matching related model.
      *
      * @return the related model, or an empty Optional when no match exists
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public Optional<T> get() throws StorageException {
         queryBuilder.limit(1);
@@ -72,7 +72,7 @@ public final class HasOne<T extends BaseModel> extends Relation<T> {
      * Return {@code true} when at least one related record exists.
      *
      * @return {@code true} when the relationship is populated
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public boolean exists() throws StorageException {
         return get().isPresent();

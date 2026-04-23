@@ -120,7 +120,7 @@ For drivers not listed (e.g. `oracle:thin`), use the raw-string overload:
 
 > **Either `url` or (`jdbcScheme` + `host` + `databaseName`) must be supplied.** `build()` throws
 > `IllegalStateException` when neither is present.
-
+>
 > **Pool settings are hints.** `JaloquentConfig.buildStore()` creates a
 > `DriverManagerDataSource` which opens one physical connection per call — it has
 > no built-in pool. The pool fields are provided so you can read them back and wire

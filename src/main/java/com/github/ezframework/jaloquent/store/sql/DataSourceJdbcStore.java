@@ -22,7 +22,7 @@ import javax.sql.DataSource;
  * instance satisfies every store requirement of {@link
  * com.github.ezframework.jaloquent.model.ModelRepository}.
  *
- * <h3>Quick start (no custom store code needed)</h3>
+ * <h2>Quick start (no custom store code needed)</h2>
  * <pre>{@code
  * DataSource ds = ...; // e.g. HikariCP, H2, any JDBC DataSource
  * TableRegistry.register("players", "players", columns);
@@ -31,7 +31,7 @@ import javax.sql.DataSource;
  * );
  * }</pre>
  *
- * <h3>SQL path vs. flat-map path</h3>
+ * <h2>SQL path vs. flat-map path</h2>
  * <p>This implementation is designed exclusively for the SQL path. The
  * {@link DataStore} methods ({@link #save}, {@link #load}, {@link #delete},
  * {@link #exists}) are intentionally unsupported and throw
@@ -39,7 +39,7 @@ import javax.sql.DataSource;
  * {@link com.github.ezframework.jaloquent.model.TableRegistry} entry exists for
  * the repository prefix, which is the expected setup when using this class.
  *
- * <h3>Transaction support</h3>
+ * <h2>Transaction support</h2>
  * <p>Implements {@link TransactionalJdbcStore} via a {@link ThreadLocal}
  * connection. Once {@link #beginTransaction()} is called, all subsequent
  * {@link #query} and {@link #executeUpdate} calls on the current thread share
