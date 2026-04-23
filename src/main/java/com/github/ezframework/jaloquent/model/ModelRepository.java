@@ -12,12 +12,10 @@ import com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder;
 import com.github.ezframework.javaquerybuilder.query.builder.SelectBuilder;
 import com.github.ezframework.javaquerybuilder.query.sql.SqlDialect;
 import com.github.ezframework.javaquerybuilder.query.sql.SqlResult;
-import io.micrometer.core.instrument.Counter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.slf4j.Logger;
 
 /**
  * Generic repository for {@link BaseModel} instances backed by a {@link DataStore}.
@@ -46,45 +44,6 @@ import org.slf4j.Logger;
  */
 public class ModelRepository<T extends BaseModel> {
 
-    /**
-     * Get the logger for this class.
-     * @return the logger or null
-     */
-    private static Logger logger() {
-        return JaloquentConfig.getLogger(ModelRepository.class);
-    }
-
-    /**
-     * Get the save counter for metrics.
-     * @return the counter or null
-     */
-    private static Counter saveCounter() {
-        return JaloquentConfig.isMetricsEnabled() && JaloquentConfig.getMeterRegistry() != null
-            ? Counter.builder("jaloquent.repository.save").register(JaloquentConfig.getMeterRegistry())
-            : null;
-    }
-
-    /**
-     * Get the delete counter for metrics.
-     * @return the counter or null
-     */
-    private static Counter deleteCounter() {
-        return JaloquentConfig.isMetricsEnabled() && JaloquentConfig.getMeterRegistry() != null
-            ? Counter.builder("jaloquent.repository.delete").register(JaloquentConfig.getMeterRegistry())
-            : null;
-    }
-
-    /**
-     * Get the query counter for metrics.
-     * @return the counter or null
-     */
-    private static Counter queryCounter() {
-        return JaloquentConfig.isMetricsEnabled() && JaloquentConfig.getMeterRegistry() != null
-            ? Counter.builder("jaloquent.repository.query").register(JaloquentConfig.getMeterRegistry())
-            : null;
-    }
-
-    /** The backing data store. */
     /** The backing data store. */
     private final DataStore store;
 
@@ -162,31 +121,18 @@ public class ModelRepository<T extends BaseModel> {
                 final SqlResult insertResult = ib.build(dialect);
                 final String sql = insertResult.getSql() + " ON DUPLICATE KEY UPDATE " + onDupe;
                 jdbc.executeUpdate(sql, insertResult.getParameters());
-                final Counter c = saveCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Saved model {} to SQL table {}", model.getId(), meta.tableName());
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.save");
+                JaloquentConfig.logInfo(ModelRepository.class,
+                    "Saved model {} to SQL table {}", model.getId(), meta.tableName());
                 return;
             }
             store.save(model.getStoragePath(prefix), model.toMap());
-            final Counter c = saveCounter();
-            if (c != null) {
-                c.increment();
-            }
-            final Logger log = logger();
-            if (log != null) {
-                log.info("Saved model {} to flat-map store", model.getId());
-            }
+            JaloquentConfig.incrementCounter("jaloquent.repository.save");
+            JaloquentConfig.logInfo(ModelRepository.class, "Saved model {} to flat-map store", model.getId());
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to save model {}: {}", model.getId(), e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class,
+                "Failed to save model {}: {}", model.getId(), e.getMessage(), e);
             throw new StorageException("Failed to save model: " + model.getId(), e);
         }
     }
@@ -224,10 +170,7 @@ public class ModelRepository<T extends BaseModel> {
             });
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to find model {}: {}", id, e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class, "Failed to find model {}: {}", id, e.getMessage(), e);
             throw new StorageException("Failed to find model: " + id, e);
         }
     }
@@ -247,31 +190,17 @@ public class ModelRepository<T extends BaseModel> {
                     .whereEquals("id", id)
                     .build(dialect);
                 jdbc.executeUpdate(deleteResult.getSql(), deleteResult.getParameters());
-                final Counter c = deleteCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Deleted model {} from SQL table {}", id, meta.tableName());
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.delete");
+                JaloquentConfig.logInfo(ModelRepository.class,
+                    "Deleted model {} from SQL table {}", id, meta.tableName());
                 return;
             }
             store.delete(storagePath(id));
-            final Counter c = deleteCounter();
-            if (c != null) {
-                c.increment();
-            }
-            final Logger log = logger();
-            if (log != null) {
-                log.info("Deleted model {} from flat-map store", id);
-            }
+            JaloquentConfig.incrementCounter("jaloquent.repository.delete");
+            JaloquentConfig.logInfo(ModelRepository.class, "Deleted model {} from flat-map store", id);
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to delete model {}: {}", id, e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class, "Failed to delete model {}: {}", id, e.getMessage(), e);
             throw new StorageException("Failed to delete model: " + id, e);
         }
     }
@@ -300,10 +229,8 @@ public class ModelRepository<T extends BaseModel> {
             return store.exists(storagePath(id));
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to check existence of model {}: {}", id, e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class,
+                "Failed to check existence of model {}: {}", id, e.getMessage(), e);
             throw new StorageException("Failed to check existence of model: " + id, e);
         }
     }
@@ -339,14 +266,9 @@ public class ModelRepository<T extends BaseModel> {
                     m.fromMap(row);
                     out.add(m);
                 }
-                final Counter c = queryCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Queried {} rows from SQL table {}", out.size(), meta.tableName());
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.query");
+                JaloquentConfig.logInfo(ModelRepository.class,
+                    "Queried {} rows from SQL table {}", out.size(), meta.tableName());
                 return out;
             }
 
@@ -355,24 +277,15 @@ public class ModelRepository<T extends BaseModel> {
                 for (final String id : ids) {
                     find(id).ifPresent(out::add);
                 }
-                final Counter c = queryCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Queried {} rows from flat-map store", out.size());
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.query");
+                JaloquentConfig.logInfo(ModelRepository.class, "Queried {} rows from flat-map store", out.size());
                 return out;
             }
 
             return out;
         }
         catch (final Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to query repository: {}", e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class, "Failed to query repository: {}", e.getMessage(), e);
             throw new StorageException("Failed to query repository", e);
         }
     }
@@ -401,30 +314,20 @@ public class ModelRepository<T extends BaseModel> {
                     .whereEquals(column, value)
                     .build(dialect);
                 jdbc.executeUpdate(deleteWhereResult.getSql(), deleteWhereResult.getParameters());
-                final Counter c = deleteCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Bulk-deleted from SQL table {} where {}={}", meta.tableName(), column, value);
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.delete");
+                JaloquentConfig.logInfo(ModelRepository.class,
+                    "Bulk-deleted from SQL table {} where {}={}", meta.tableName(), column, value);
                 return;
             }
             final List<T> matching = query(new QueryBuilder().whereEquals(column, value).build());
             for (final T m : matching) {
                 store.delete(storagePath(m.getId()));
             }
-            final Counter c = deleteCounter();
-            if (c != null) {
-                c.increment();
-            }
+            JaloquentConfig.incrementCounter("jaloquent.repository.delete");
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to deleteWhere {}={}: {}", column, value, e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class,
+                "Failed to deleteWhere {}={}: {}", column, value, e.getMessage(), e);
             throw new StorageException("Failed to deleteWhere: " + column + "=" + value, e);
         }
     }
@@ -454,30 +357,18 @@ public class ModelRepository<T extends BaseModel> {
                 q.setTable(meta.tableName());
                 final SqlResult deleteResult = dialect.renderDelete(q);
                 jdbc.executeUpdate(deleteResult.getSql(), deleteResult.getParameters());
-                final Counter c = deleteCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Query-deleted from SQL table {}", meta.tableName());
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.delete");
+                JaloquentConfig.logInfo(ModelRepository.class, "Query-deleted from SQL table {}", meta.tableName());
                 return;
             }
             final List<T> matching = query(q);
             for (final T m : matching) {
                 store.delete(storagePath(m.getId()));
             }
-            final Counter c = deleteCounter();
-            if (c != null) {
-                c.increment();
-            }
+            JaloquentConfig.incrementCounter("jaloquent.repository.delete");
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to deleteWhere(Query): {}", e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class, "Failed to deleteWhere(Query): {}", e.getMessage(), e);
             throw new StorageException("Failed to deleteWhere(Query)", e);
         }
     }
@@ -508,14 +399,9 @@ public class ModelRepository<T extends BaseModel> {
                     .whereInSubquery(column, subquery)
                     .build(dialect);
                 jdbc.executeUpdate(result.getSql(), result.getParameters());
-                final Counter c = deleteCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Subquery-IN deleted from SQL table {}", meta.tableName());
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.delete");
+                JaloquentConfig.logInfo(ModelRepository.class,
+                    "Subquery-IN deleted from SQL table {}", meta.tableName());
                 return;
             }
             throw new UnsupportedOperationException(
@@ -525,10 +411,7 @@ public class ModelRepository<T extends BaseModel> {
             throw e;
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to deleteWhereInSubquery: {}", e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class, "Failed to deleteWhereInSubquery: {}", e.getMessage(), e);
             throw new StorageException("Failed to deleteWhereInSubquery", e);
         }
     }
@@ -555,14 +438,9 @@ public class ModelRepository<T extends BaseModel> {
                     .whereExistsSubquery(subquery)
                     .build(dialect);
                 jdbc.executeUpdate(result.getSql(), result.getParameters());
-                final Counter c = deleteCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Subquery-EXISTS deleted from SQL table {}", meta.tableName());
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.delete");
+                JaloquentConfig.logInfo(ModelRepository.class,
+                    "Subquery-EXISTS deleted from SQL table {}", meta.tableName());
                 return;
             }
             throw new UnsupportedOperationException(
@@ -572,10 +450,7 @@ public class ModelRepository<T extends BaseModel> {
             throw e;
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to deleteWhereExists: {}", e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class, "Failed to deleteWhereExists: {}", e.getMessage(), e);
             throw new StorageException("Failed to deleteWhereExists", e);
         }
     }
@@ -603,29 +478,18 @@ public class ModelRepository<T extends BaseModel> {
                     .whereIn("id", new ArrayList<>(ids))
                     .build(dialect);
                 jdbc.executeUpdate(deleteAllResult.getSql(), deleteAllResult.getParameters());
-                final Counter c = deleteCounter();
-                if (c != null) {
-                    c.increment();
-                }
-                final Logger log = logger();
-                if (log != null) {
-                    log.info("Bulk-deleted {} records from SQL table {}", ids.size(), meta.tableName());
-                }
+                JaloquentConfig.incrementCounter("jaloquent.repository.delete");
+                JaloquentConfig.logInfo(ModelRepository.class,
+                    "Bulk-deleted {} records from SQL table {}", ids.size(), meta.tableName());
                 return;
             }
             for (final String id : ids) {
                 store.delete(storagePath(id));
             }
-            final Counter c = deleteCounter();
-            if (c != null) {
-                c.increment();
-            }
+            JaloquentConfig.incrementCounter("jaloquent.repository.delete");
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to deleteAll: {}", e.getMessage(), e);
-            }
+            JaloquentConfig.logError(ModelRepository.class, "Failed to deleteAll: {}", e.getMessage(), e);
             throw new StorageException("Failed to deleteAll", e);
         }
     }

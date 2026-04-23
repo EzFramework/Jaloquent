@@ -3,7 +3,6 @@ package com.github.ezframework.jaloquent.model;
 import com.github.ezframework.jaloquent.config.JaloquentConfig;
 import com.github.ezframework.jaloquent.exception.StorageException;
 import com.github.ezframework.jaloquent.store.sql.TransactionalJdbcStore;
-import org.slf4j.Logger;
 
 /**
  * A database transaction handle returned by {@link ModelRepository#transaction()}.
@@ -83,10 +82,7 @@ public class Transaction implements AutoCloseable {
             store.rollbackTransaction();
         }
         catch (Exception e) {
-            final Logger log = JaloquentConfig.getLogger(Transaction.class);
-            if (log != null) {
-                log.error("Failed to auto-rollback transaction on close", e);
-            }
+            JaloquentConfig.logError(Transaction.class, "Failed to auto-rollback transaction on close", e);
         }
     }
 

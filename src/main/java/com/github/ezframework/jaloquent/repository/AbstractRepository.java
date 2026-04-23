@@ -2,13 +2,11 @@ package com.github.ezframework.jaloquent.repository;
 
 import com.github.ezframework.jaloquent.config.JaloquentConfig;
 import com.github.ezframework.jaloquent.store.DataStore;
-import io.micrometer.core.instrument.Counter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.slf4j.Logger;
 
 /**
  * Convenience base implementation of {@link Repository} backed by a
@@ -28,34 +26,6 @@ import org.slf4j.Logger;
  * @param <ID> the identifier type
  */
 public abstract class AbstractRepository<T, ID> implements Repository<T, ID> {
-
-    /**
-     * Get the logger for this class.
-     * @return the logger or null
-     */
-    private static Logger logger() {
-        return JaloquentConfig.getLogger(AbstractRepository.class);
-    }
-
-    /**
-     * Get the save counter for metrics.
-     * @return the counter or null
-     */
-    private static Counter saveCounter() {
-        return JaloquentConfig.isMetricsEnabled() && JaloquentConfig.getMeterRegistry() != null
-            ? Counter.builder("jaloquent.abstractrepository.save").register(JaloquentConfig.getMeterRegistry())
-            : null;
-    }
-
-    /**
-     * Get the delete counter for metrics.
-     * @return the counter or null
-     */
-    private static Counter deleteCounter() {
-        return JaloquentConfig.isMetricsEnabled() && JaloquentConfig.getMeterRegistry() != null
-            ? Counter.builder("jaloquent.abstractrepository.delete").register(JaloquentConfig.getMeterRegistry())
-            : null;
-    }
 
     /** The backing data store. */
     private final DataStore store;
@@ -121,17 +91,12 @@ public abstract class AbstractRepository<T, ID> implements Repository<T, ID> {
     public Optional<T> find(ID id) throws Exception {
         try {
             final Optional<T> result = store.load(pathFor(id)).map(this::fromMap);
-            final Logger log = logger();
-            if (log != null) {
-                log.info("Find entity {}: {}", id, result.isPresent() ? "found" : "not found");
-            }
+            JaloquentConfig.logInfo(AbstractRepository.class,
+                "Find entity {}: {}", id, result.isPresent() ? "found" : "not found");
             return result;
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to find entity {}: {}", id, e.getMessage(), e);
-            }
+            JaloquentConfig.logError(AbstractRepository.class, "Failed to find entity {}: {}", id, e.getMessage(), e);
             throw e;
         }
     }
@@ -145,20 +110,12 @@ public abstract class AbstractRepository<T, ID> implements Repository<T, ID> {
     public void save(T entity) throws Exception {
         try {
             store.save(pathFor(extractId(entity)), toMap(entity));
-            final Counter c = saveCounter();
-            if (c != null) {
-                c.increment();
-            }
-            final Logger log = logger();
-            if (log != null) {
-                log.info("Saved entity {}", extractId(entity));
-            }
+            JaloquentConfig.incrementCounter("jaloquent.abstractrepository.save");
+            JaloquentConfig.logInfo(AbstractRepository.class, "Saved entity {}", extractId(entity));
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to save entity {}: {}", extractId(entity), e.getMessage(), e);
-            }
+            JaloquentConfig.logError(AbstractRepository.class,
+                "Failed to save entity {}: {}", extractId(entity), e.getMessage(), e);
             throw e;
         }
     }
@@ -167,20 +124,11 @@ public abstract class AbstractRepository<T, ID> implements Repository<T, ID> {
     public void delete(ID id) throws Exception {
         try {
             store.delete(pathFor(id));
-            final Counter c = deleteCounter();
-            if (c != null) {
-                c.increment();
-            }
-            final Logger log = logger();
-            if (log != null) {
-                log.info("Deleted entity {}", id);
-            }
+            JaloquentConfig.incrementCounter("jaloquent.abstractrepository.delete");
+            JaloquentConfig.logInfo(AbstractRepository.class, "Deleted entity {}", id);
         }
         catch (Exception e) {
-            final Logger log = logger();
-            if (log != null) {
-                log.error("Failed to delete entity {}: {}", id, e.getMessage(), e);
-            }
+            JaloquentConfig.logError(AbstractRepository.class, "Failed to delete entity {}: {}", id, e.getMessage(), e);
             throw e;
         }
     }
