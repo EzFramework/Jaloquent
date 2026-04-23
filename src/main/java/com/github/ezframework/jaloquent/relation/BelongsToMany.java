@@ -107,7 +107,7 @@ public final class BelongsToMany<T extends BaseModel, P extends BaseModel> {
      * Execute the relationship: resolve pivot rows then load all related models.
      *
      * @return list of related models; never {@code null}
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public List<T> get() throws StorageException {
         final List<P> pivotEntries = pivotRepo.query(
@@ -128,7 +128,7 @@ public final class BelongsToMany<T extends BaseModel, P extends BaseModel> {
      * Attach a related model to this relationship by creating a pivot entry.
      *
      * @param relatedId the ID of the related model to attach
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public void attach(String relatedId) throws StorageException {
         attach(relatedId, null);
@@ -139,7 +139,7 @@ public final class BelongsToMany<T extends BaseModel, P extends BaseModel> {
      *
      * @param relatedId  the ID of the related model to attach
      * @param extraAttrs additional key-value pairs to store on the pivot entry (may be {@code null})
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public void attach(String relatedId, Map<String, Object> extraAttrs) throws StorageException {
         final String pivotId = parentId + "_" + relatedId;
@@ -158,7 +158,7 @@ public final class BelongsToMany<T extends BaseModel, P extends BaseModel> {
      * Detach a specific related model from this relationship by removing the pivot entry.
      *
      * @param relatedId the ID of the related model to detach
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public void detach(String relatedId) throws StorageException {
         pivotRepo.delete(parentId + "_" + relatedId);
@@ -170,7 +170,7 @@ public final class BelongsToMany<T extends BaseModel, P extends BaseModel> {
      * <p>Issues a single bulk DELETE (SQL path) or iterates once over QueryableStorage results
      * (flat-map path). No separate SELECT is issued on the SQL path.
      *
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public void detachAll() throws StorageException {
         pivotRepo.deleteWhere(foreignKey, parentId);
@@ -184,7 +184,7 @@ public final class BelongsToMany<T extends BaseModel, P extends BaseModel> {
      * avoiding the N+1 problem when many pivot records must be removed.
      *
      * @param desiredIds the desired set of related model IDs
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public void sync(List<String> desiredIds) throws StorageException {
         final List<P> existing = pivotRepo.query(
@@ -206,7 +206,7 @@ public final class BelongsToMany<T extends BaseModel, P extends BaseModel> {
      * Count the number of related records through the pivot table.
      *
      * @return number of related models
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public long count() throws StorageException {
         return get().size();

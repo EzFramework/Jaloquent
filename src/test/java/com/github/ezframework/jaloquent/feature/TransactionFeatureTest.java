@@ -275,4 +275,34 @@ public class TransactionFeatureTest {
         assertEquals(original, thrown, "StorageException thrown by callback must not be wrapped");
     }
 
+    // =========================================================================
+    // close() — rollback exception swallowing
+    // =========================================================================
+
+    @Test
+    void closeSwallowsRollbackException() throws Exception {
+        final ThrowingRollbackStore store = new ThrowingRollbackStore();
+        final Transaction tx = repo(store).transaction();
+        // close() must NOT propagate the StorageException thrown by rollbackTransaction
+        tx.close();
+    }
+
+    // =========================================================================
+    // Fixture — store whose rollbackTransaction always throws
+    // =========================================================================
+
+    /**
+     * {@link TransactionalJdbcStore} + {@link DataStore} variant whose
+     * {@link #rollbackTransaction()} always throws, used to exercise the
+     * exception-swallowing path in {@link Transaction#close()}.
+     */
+    static class ThrowingRollbackStore extends RecordingTransactionalJdbcStore {
+
+        @Override
+        public void rollbackTransaction() throws StorageException {
+            throw new StorageException("simulated rollback failure");
+        }
+
+    }
+
 }

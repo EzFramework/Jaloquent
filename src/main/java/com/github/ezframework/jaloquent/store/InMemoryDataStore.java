@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link com.github.ezframework.javaquerybuilder.query.Query} objects
  * in-process without a database.
  *
- * <h3>Quick start (no custom store code needed)</h3>
+ * <h2>Quick start (no custom store code needed)</h2>
  * <pre>{@code
  * InMemoryDataStore store = new InMemoryDataStore();
  * ModelRepository<Player> repo = new ModelRepository<>(store, "players", Player::new);
@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * List<Player> found = repo.query(Model.queryBuilder().whereEquals("active", true).build());
  * }</pre>
  *
- * <h3>Query support</h3>
+ * <h2>Query support</h2>
  * <p>Implements {@link QueryableStorage#query(Query)} using the condition
  * evaluation built into the {@code java-query-builder} library
  * ({@link com.github.ezframework.javaquerybuilder.query.condition.Condition#matches}).
@@ -38,11 +38,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * When a query has no conditions every stored entry is returned (up to the
  * configured limit, if any).
  *
- * <h3>Thread safety</h3>
+ * <h2>Thread safety</h2>
  * <p>The backing {@link ConcurrentHashMap} provides safe concurrent access for
  * individual operations. Multi-step compound operations are not atomic.
  *
- * <h3>Persistence</h3>
+ * <h2>Persistence</h2>
  * <p>All data lives in the JVM heap and is discarded when the instance is
  * garbage-collected or {@link #clear()} is called. This store is intentionally
  * scoped to tests and development. For production, use

@@ -7,12 +7,10 @@ import com.github.ezframework.jaloquent.relation.BelongsToMany;
 import com.github.ezframework.jaloquent.relation.HasMany;
 import com.github.ezframework.jaloquent.relation.HasOne;
 import com.github.ezframework.javaquerybuilder.query.builder.QueryBuilder;
-import io.micrometer.core.instrument.Counter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
 
 /**
  * Eloquent-style base model.
@@ -31,22 +29,6 @@ import org.slf4j.Logger;
  * }</pre>
  */
 public abstract class Model extends BaseModel {
-
-    private static Logger logger() {
-        return JaloquentConfig.getLogger(Model.class);
-    }
-
-    private static Counter saveCounter() {
-        return JaloquentConfig.isMetricsEnabled() && JaloquentConfig.getMeterRegistry() != null
-            ? Counter.builder("jaloquent.model.save").register(JaloquentConfig.getMeterRegistry())
-            : null;
-    }
-
-    private static Counter deleteCounter() {
-        return JaloquentConfig.isMetricsEnabled() && JaloquentConfig.getMeterRegistry() != null
-            ? Counter.builder("jaloquent.model.delete").register(JaloquentConfig.getMeterRegistry())
-            : null;
-    }
 
     /**
      * Attribute storage map.
@@ -319,14 +301,8 @@ public abstract class Model extends BaseModel {
     public <T extends Model> T save(ModelRepository<T> repo) throws StorageException {
         try {
             repo.save((T) this);
-            final Counter c = saveCounter();
-            if (c != null) {
-                c.increment();
-            }
-            final Logger log = logger();
-            if (log != null) {
-                log.info("Model saved: {}", getId());
-            }
+            JaloquentConfig.incrementCounter("jaloquent.model.save");
+            JaloquentConfig.logInfo(Model.class, "Model saved: {}", getId());
             return (T) this;
         }
         catch (Exception e) {
@@ -344,14 +320,8 @@ public abstract class Model extends BaseModel {
     public <T extends Model> void delete(ModelRepository<T> repo) throws StorageException {
         try {
             repo.delete(getId());
-            final Counter c = deleteCounter();
-            if (c != null) {
-                c.increment();
-            }
-            final Logger log = logger();
-            if (log != null) {
-                log.info("Model deleted: {}", getId());
-            }
+            JaloquentConfig.incrementCounter("jaloquent.model.delete");
+            JaloquentConfig.logInfo(Model.class, "Model deleted: {}", getId());
         }
         catch (Exception e) {
             throw new StorageException("Failed to delete model: " + getId(), e);

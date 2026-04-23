@@ -18,6 +18,9 @@ description: "One-to-many relationship where the foreign key lives on the relate
 
 ## Overview
 
+{: .note }
+> Part of the [Relations](../relations) family: [`HasOne`](has-one), `HasMany`, [`BelongsTo`](belongs-to), [`BelongsToMany`](belongs-to-many).
+
 `HasMany<T>` represents a one-to-many relationship where the foreign key lives on
 the **related** model. This model is the *parent*; the related model stores a
 reference back to it.

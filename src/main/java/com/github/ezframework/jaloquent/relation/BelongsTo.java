@@ -44,7 +44,7 @@ public final class BelongsTo<T extends BaseModel> {
      * Load the related model by its primary key.
      *
      * @return the related model, or an empty Optional when the FK is {@code null} or has no match
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public Optional<T> get() throws StorageException {
         if (ownerKeyValue == null) {
@@ -57,7 +57,7 @@ public final class BelongsTo<T extends BaseModel> {
      * Return {@code true} when the FK is set and the related record exists.
      *
      * @return {@code true} when the relationship is populated
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public boolean exists() throws StorageException {
         return get().isPresent();

@@ -19,7 +19,7 @@ description: "Atomic multi-step database operations with TransactionalJdbcStore"
 
 Jaloquent supports explicit database transactions through the
 `TransactionalJdbcStore` interface.  When the store opts into this interface,
-any `ModelRepository` backed by that store can group multiple operations into a
+any [`ModelRepository`](repositories) backed by that store can group multiple operations into a
 single atomic unit — all changes commit together or all are rolled back.
 
 Because transaction state is owned by the **store** implementation (not by the
@@ -154,8 +154,8 @@ try (Transaction tx = orderRepo.transaction()) {
 
 | Exception | When thrown |
 |-----------|-------------|
-| `StorageException` | Store does not implement `TransactionalJdbcStore`; commit/rollback fails; callback throws a non-storage exception |
-| `TransactionException` | Subclass of `StorageException` raised by `TransactionalJdbcStore` implementations for begin/commit/rollback failures |
+| [`StorageException`](exceptions#storageexception) | Store does not implement `TransactionalJdbcStore`; commit/rollback fails; callback throws a non-storage exception |
+| [`TransactionException`](exceptions#transactionexception) | Subclass of `StorageException` raised by `TransactionalJdbcStore` implementations for begin/commit/rollback failures |
 
 ```java
 try (Transaction tx = repo.transaction()) {

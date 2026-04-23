@@ -23,7 +23,8 @@ description: "Generating test fixtures with Factory<T>, HasFactory, and FactoryC
 
 Jaloquent ships a Laravel-style factory system built on [Jaker](https://github.com/EzFramework/Jaker),
 a Java fake-data library. Factories let you generate realistic model instances
-for tests and seeders with minimal boilerplate.
+for tests and seeders with minimal boilerplate. To persist generated instances a
+[`ModelRepository`](repositories) must be provided to `create()`.
 
 ```text
 Factory<T>          ← abstract base — you implement definition()

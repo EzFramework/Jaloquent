@@ -6,7 +6,7 @@ import com.github.ezframework.jaloquent.exception.StorageException;
  * Extension of {@link JdbcStore} for stores that support explicit database transactions.
  *
  * <p>Implementations manage the connection-level transaction state. Once
- * {@link #beginTransaction()} is called, subsequent {@link #query(java.util.List, java.util.List)}
+ * {@link #beginTransaction()} is called, subsequent {@link #query(String, java.util.List)}
  * and {@link #executeUpdate(String, java.util.List)} calls on the same store instance
  * participate in the open transaction until {@link #commitTransaction()} or
  * {@link #rollbackTransaction()} is invoked.

@@ -96,8 +96,9 @@ catch (ValidationException e) {
 
 ## TransactionException
 
-A subclass of `StorageException` raised when a transaction lifecycle operation
+A subclass of [`StorageException`](#storageexception) raised when a transaction lifecycle operation
 fails — `beginTransaction()`, `commitTransaction()`, or `rollbackTransaction()`.
+See [Transactions](transactions) for full transaction usage and error handling patterns.
 
 ```java
 try (Transaction tx = repo.transaction()) {

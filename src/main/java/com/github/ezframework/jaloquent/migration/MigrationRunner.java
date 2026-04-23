@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  * {@link #rollback()}. Each row stores the migration ID and the batch number it
  * was applied in.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * List<Migration> migrations = List.of(
  *     new CreateUsersTable(),
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * runner.rollback(); // reverts the last batch
  * }</pre>
  *
- * <h3>Batch semantics</h3>
+ * <h2>Batch semantics</h2>
  * <p>All migrations applied in a single {@link #run()} call share the same
  * batch number. {@link #rollback()} reverts every migration belonging to the
  * most recent batch, in reverse list order.

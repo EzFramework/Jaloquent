@@ -70,7 +70,7 @@ public final class HasMany<T extends BaseModel> extends Relation<T> {
      * Execute the relationship and return all matching related models.
      *
      * @return list of related models; never {@code null}
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public List<T> get() throws StorageException {
         return related.query(queryBuilder.build());
@@ -80,7 +80,7 @@ public final class HasMany<T extends BaseModel> extends Relation<T> {
      * Count the related records.
      *
      * @return the number of related models
-     * @throws Exception on storage failure
+     * @throws StorageException on storage failure
      */
     public long count() throws StorageException {
         return get().size();

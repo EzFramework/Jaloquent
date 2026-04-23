@@ -27,6 +27,11 @@ public class Fillable {
     private final Set<String> guarded  = new HashSet<>();
 
     /**
+     * Creates a {@code Fillable} with empty fillable and guarded sets.
+     */
+    public Fillable() { }
+
+    /**
      * Replace the fillable (mass-assignable) key set.
      *
      * @param keys attribute names to mark as fillable

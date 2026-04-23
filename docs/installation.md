@@ -123,7 +123,7 @@ with a personal access token that has `read:packages` scope.
 {: .note }
 > Micrometer and Logback are included for convenience but are opt-in at runtime.
 > Set `JaloquentConfig.enableLogging(false)` and `JaloquentConfig.enableMetrics(false)`
-> to disable their overhead if you supply your own implementations.
+> to disable their overhead if you supply your own implementations — see [Configuration](configuration).
 
 ---
 

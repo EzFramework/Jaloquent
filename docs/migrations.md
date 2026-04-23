@@ -347,8 +347,8 @@ interpolated into SQL.
 
 ## Error handling
 
-All migration errors are wrapped in `MigrationException`, which extends
-`JaloquentException`. Catch it to implement custom retry or alerting logic:
+All migration errors are wrapped in [`MigrationException`](exceptions#hierarchy), which extends
+[`JaloquentException`](exceptions). Catch it to implement custom retry or alerting logic:
 
 ```java
 try {

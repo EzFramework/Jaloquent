@@ -17,24 +17,77 @@ description: "Complete public method tables for every class and interface in Jal
 
 ## config
 
+See [Configuration](configuration) for complete examples for each class.
+
 ### `JaloquentConfig`
 
-Static configuration — all members are `static`.
+Static configuration — all members are `static`. See [Configuration](configuration) for full documentation.
 
 | Method | Type | Description |
 |--------|------|-------------|
+| `setDatabaseSettings(DatabaseSettings)` | `void` | Store the settings used by `buildStore()` |
+| `getDatabaseSettings()` | `DatabaseSettings` | Return current settings, or `null` if not set |
+| `buildStore()` | `DataSourceJdbcStore` | Build a `DataSourceJdbcStore` from stored settings |
 | `enableLogging(boolean)` | `void` | Toggle SLF4J logging on / off globally |
 | `isLoggingEnabled()` | `boolean` | Query the current logging state |
-| `setLogger(Logger)` | `void` | Inject a custom SLF4J logger |
-| `getLogger(Class<?>)` | `Logger` | Returns active logger; `null` if logging is disabled |
+| `isSLF4JPresent()` | `boolean` | Whether `org.slf4j.Logger` was found at JVM startup |
+| `setLogger(Object)` | `void` | Inject a custom SLF4J `Logger` (accepts `Object` to avoid hard dependency) |
 | `enableMetrics(boolean)` | `void` | Toggle Micrometer metrics on / off globally |
 | `isMetricsEnabled()` | `boolean` | Query the current metrics state |
-| `setMeterRegistry(MeterRegistry)` | `void` | Inject a custom `MeterRegistry` |
-| `getMeterRegistry()` | `MeterRegistry` | Returns active registry; `null` if metrics are disabled |
+| `isMicrometerPresent()` | `boolean` | Whether Micrometer was found at JVM startup |
+| `setMeterRegistry(Object)` | `void` | Inject a custom `MeterRegistry` (accepts `Object` to avoid hard dependency) |
+
+---
+
+### `DatabaseSettings`
+
+Immutable JDBC connection settings. See [Configuration → Database settings](configuration#database-settings) for full documentation.
+
+**Builder methods** (`DatabaseSettings.builder().…build()`):
+
+| Method | Description |
+|--------|-------------|
+| `url(String)` | Full JDBC URL (optional if `jdbcScheme` + `host` + `databaseName` are supplied) |
+| `jdbcScheme(JdbcScheme)` | Scheme via enum — preferred for common databases |
+| `jdbcScheme(String)` | Scheme via raw string (escape hatch for non-standard drivers) |
+| `host(String)` | Database server host or IP address |
+| `port(int)` | TCP port; `0` omits from composed URL |
+| `databaseName(String)` | Database / schema name |
+| `username(String)` | Login user |
+| `password(String)` | Login password |
+| `driverClassName(String)` | Explicit driver class; `null` — auto-detect via SPI |
+| `maximumPoolSize(int)` | Pool size hint (default: `10`) |
+| `minimumIdle(int)` | Min idle connections hint (default: `2`) |
+| `connectionTimeoutMs(long)` | Connection timeout hint in ms (default: `30 000`) |
+| `idleTimeoutMs(long)` | Idle timeout hint in ms (default: `600 000`) |
+| `maxLifetimeMs(long)` | Max lifetime hint in ms (default: `1 800 000`) |
+
+**Getters:** `getUrl()`, `getJdbcScheme()`, `getHost()`, `getPort()`, `getDatabaseName()`, `getUsername()`, `getPassword()`, `getDriverClassName()`, `getMaximumPoolSize()`, `getMinimumIdle()`, `getConnectionTimeoutMs()`, `getIdleTimeoutMs()`, `getMaxLifetimeMs()`.
+
+**Constants:** `DEFAULT_MYSQL_PORT` (`3306`), `DEFAULT_POSTGRESQL_PORT` (`5432`), `DEFAULT_MAX_POOL_SIZE` (`10`), `DEFAULT_MIN_IDLE` (`2`), `DEFAULT_CONNECTION_TIMEOUT_MS` (`30 000`), `DEFAULT_IDLE_TIMEOUT_MS` (`600 000`), `DEFAULT_MAX_LIFETIME_MS` (`1 800 000`).
+
+---
+
+### `JdbcScheme` (enum)
+
+Type-safe JDBC scheme selector for [`DatabaseSettings.Builder#jdbcScheme(JdbcScheme)`](#databasesettings). See [Configuration → Available JdbcScheme constants](configuration#available-jdbcscheme-constants).
+
+| Constant | Scheme string | Default port |
+|----------|---------------|--------------|
+| `MYSQL` | `mysql` | 3306 |
+| `POSTGRESQL` | `postgresql` | 5432 |
+| `MARIADB` | `mariadb` | 3306 |
+| `MSSQL` | `sqlserver` | 1433 |
+| `H2` | `h2` | — |
+| `SQLITE` | `sqlite` | — |
+
+`getScheme()` returns the string segment used after `jdbc:` in the URL.
 
 ---
 
 ## exception
+
+See [Exceptions](exceptions) for usage patterns and catch hierarchy recommendations.
 
 ### `JaloquentException` (base)
 
@@ -59,6 +112,8 @@ Extends `JaloquentException`. Same three constructors. Thrown when a required lo
 ---
 
 ## model
+
+See [Models](models) for attribute access, mass-assignment, and persistence shortcuts.
 
 ### `BaseModel` (abstract)
 
@@ -107,7 +162,7 @@ Extends `JaloquentException`. Same three constructors. Thrown when a required lo
 | `static find(ModelRepository<T>, String id)` | `T` | Look up by id; `null` if not found |
 | `static queryBuilder()` | `QueryBuilder` | New `QueryBuilder` instance |
 
-**Relation factories** (protected, call from subclass methods)
+**Relation factories** (protected, call from subclass methods) — see [Relations](relations) for full documentation
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -134,6 +189,8 @@ Extends `JaloquentException`. Same three constructors. Thrown when a required lo
 ---
 
 ### `ModelRepository<T extends BaseModel>`
+
+See [Repositories](repositories) for setup, routing behaviour, and test patterns. See [Transactions](transactions) for transaction support.
 
 #### Constructors
 
@@ -200,6 +257,8 @@ from persisted data.
 
 ### `Factory<T extends Model>` (abstract)
 
+See [Factories](factories) for full usage documentation.
+
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `Factory()` | — | Auto-discovers model class; `en-US` Jaker |
@@ -234,6 +293,8 @@ No methods — purely a marker.
 ---
 
 ## relation
+
+See [Relations](relations) for the full overview including N+1 avoidance patterns.
 
 ### `HasOne<T>` (final)
 
@@ -285,6 +346,8 @@ No methods — purely a marker.
 
 ## repository
 
+See [Repositories](repositories) for setup and usage documentation.
+
 ### `Repository<T, ID>` (interface)
 
 | Method | Returns | Description |
@@ -298,7 +361,7 @@ No methods — purely a marker.
 
 ### `AbstractRepository<T, ID>` (abstract, implements `Repository`)
 
-Convenience base backed by `DataStore` with SLF4J + Micrometer instrumentation.
+Convenience base backed by `DataStore` with SLF4J + Micrometer instrumentation — see [Configuration](configuration) for opt-in details.
 
 **Implement in subclass:**
 
@@ -318,6 +381,8 @@ Convenience base backed by `DataStore` with SLF4J + Micrometer instrumentation.
 
 ## store
 
+See [Repositories → Store interfaces](repositories#store-interfaces) for implementation guidance.
+
 ### `DataStore` (interface)
 
 | Method | Returns | Description |
@@ -335,3 +400,36 @@ Convenience base backed by `DataStore` with SLF4J + Micrometer instrumentation.
 |--------|---------|-------------|
 | `query(String sql, List<Object> params)` | `List<Map<String,Object>>` | Parameterized SELECT |
 | `executeUpdate(String sql, List<Object> params)` | `int` | Parameterized INSERT / UPDATE / DELETE; returns affected row count |
+
+---
+
+### `TransactionalJdbcStore` (interface, extends `JdbcStore`)
+
+Opt-in interface that enables transaction support in [`ModelRepository`](#modelrepositoryt-extends-basemodel). See [Transactions](transactions) for full documentation.
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `beginTransaction()` | `void` | Start a database transaction |
+| `commitTransaction()` | `void` | Commit the current transaction |
+| `rollbackTransaction()` | `void` | Discard all changes since `beginTransaction()` |
+
+---
+
+### `DriverManagerDataSource` (implements `javax.sql.DataSource`)
+
+Simple `DataSource` backed by `DriverManager.getConnection()`. No connection pool — one physical connection per call. Produced by [`JaloquentConfig.buildStore()`](#jaloquentconfig). See [Configuration → Database settings](configuration#database-settings) for when to use this vs. a pooled `DataSource`.
+
+| Constructor | Description |
+|-------------|-------------|
+| `DriverManagerDataSource(DatabaseSettings)` | Create from stored settings |
+| `DriverManagerDataSource(String url, String username, String password)` | Create directly |
+
+---
+
+### `DataSourceJdbcStore`
+
+Production-ready `JdbcStore` backed by any `javax.sql.DataSource`. Construct directly with your own pooled `DataSource` (HikariCP, c3p0, …) for production, or obtain a `DriverManagerDataSource`-backed instance via [`JaloquentConfig.buildStore()`](#jaloquentconfig).
+
+| Constructor | Description |
+|-------------|-------------|
+| `DataSourceJdbcStore(DataSource)` | Create from any `DataSource` |

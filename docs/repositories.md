@@ -209,6 +209,10 @@ List<Player> rich = repo.query(
 
 See the [Queries](queries) page for the full query builder reference.
 
+{: .note }
+> For atomic multi-step operations across multiple `save()` and `delete()` calls,
+> see [Transactions](transactions).
+
 ---
 
 ## Bulk and conditional delete
@@ -280,7 +284,7 @@ void setUp() {
 
 For non-`Model` domain objects, extend `AbstractRepository<T, ID>` which provides
 `find`, `findAll`, `save`, and `delete` backed by `DataStore` with built-in
-SLF4J logging and Micrometer counter instrumentation.
+SLF4J logging and Micrometer counter instrumentation — see [Configuration](configuration) for opt-in details.
 
 ```java
 public class PlayerRepository extends AbstractRepository<Player, String> {
@@ -303,3 +307,11 @@ public class PlayerRepository extends AbstractRepository<Player, String> {
     protected String extractId(Player p) { return p.getId(); }
 }
 ```
+
+---
+
+## See also
+
+- [Queries](queries) — building `Query` objects to pass to `repo.query()` and `repo.deleteWhere()`
+- [Transactions](transactions) — grouping repository operations into atomic units
+- [Configuration](configuration) — wiring a production-ready `DataSourceJdbcStore` via `DatabaseSettings`
