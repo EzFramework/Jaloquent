@@ -12,7 +12,7 @@ Supports both SQL (JDBC) and flat-map stores with a consistent API inspired by L
 
 ## Requirements
 
-- Java 25+
+- Java 21+
 - Maven or Gradle
 
 ---
@@ -37,7 +37,7 @@ Add the JitPack repository and the dependency to your `pom.xml`:
 <dependency>
     <groupId>com.github.EzFramework</groupId>
     <artifactId>jaloquent</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
 </dependency>
 ```
 

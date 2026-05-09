@@ -5,7 +5,7 @@
 
     <groupId>com.github.EzFramework</groupId>
     <artifactId>jaloquent</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
     <packaging>jar</packaging>
     <name>Jaloquent</name>
     <description>
@@ -16,9 +16,9 @@
     <url>https://github.com/EzFramework/Jaloquent</url>
 
     <properties>
-        <java.version>25</java.version>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
